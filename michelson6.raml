@@ -1,0 +1,593 @@
+exception Invalid_argument
+
+type ct =
+  Int of int | Nat of Rnat.t | Mutez of int | Bool of bool | Timestamp of int
+and t =
+  Ct of ct | Unit | None | Some of t | List of ct list | Set of ct list |
+  Pair of t * t
+
+let rec seq (body:(t list -> t list) list) s =
+  match body with
+  | [] -> s
+  | op :: l -> seq l (op s)
+
+
+let if_ bt bf (s:t list) =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Bool b  -> if b then seq bt xs else seq bf xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let rec loop_aux n body s =
+  Rnat.ifz n
+    (fun () -> s)
+    (fun n' ->
+      let s' = seq body s in
+      match s' with
+      | [] -> raise Invalid_argument
+      | Ct Bool b :: xs -> begin
+        if b then loop_aux n' body xs else xs
+      end
+      | _ -> raise Invalid_argument)
+
+
+let loop n body s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Bool b -> if b then loop_aux n body xs else xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let dip1 code (s: t list) =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> x :: seq code xs
+
+let rec dip n code (s:t list) =
+  match s with
+  | [] ->
+    if n = 0 then seq code s else raise Invalid_argument
+  | x :: xs ->
+    if n = 0 then seq code s else x :: (dip (n-1) code xs)
+  (*match s with
+  | [] ->
+    Rnat.ifz n
+      (fun () -> seq code s)
+      (fun n' -> s)
+  | x :: xs ->
+    Rnat.ifz n
+      (fun () -> seq code s)
+      (fun n' -> x :: dip n' code xs)*)
+
+
+let rec drop n (s:t list) =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: xs ->
+    Rnat.ifz n
+      (fun () -> s)
+      (fun n' ->
+        Rnat.ifz n'
+          (fun () -> xs)
+          (fun n'' -> drop n'' xs))
+
+let dup (s:t list) =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> x :: x :: xs
+
+
+let swap (s:t list) =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> y :: x :: xs
+
+
+let rec append l1 l2 =
+  match l1 with
+  | [] -> l2
+  | x::xs -> x::(append xs l2)
+
+let rec dig_aux n (s':t list) (s:t list)=
+  Rnat.ifz n
+    (fun () -> begin
+      match s with
+      | [] -> raise Invalid_argument
+      | x :: xs -> append (x :: s') xs
+    end)
+    (fun n' -> begin
+      match s with
+      | [] -> raise Invalid_argument
+      | x :: xs -> dig_aux n' (append s' [x]) xs
+    end)
+
+let dig n s = dig_aux n [] s
+
+
+let rec dug n (s:t list) =
+  Rnat.ifz n
+    (fun () -> s)
+    (fun n' -> begin
+      match s with
+      | [] -> raise Invalid_argument
+      | _ :: [] -> raise Invalid_argument
+      | x :: y :: xs -> y :: dug n (x :: xs)
+    end)
+
+
+let push (x:t) (s:t list) =  x :: s
+
+
+let unit s = Unit :: s
+
+
+let eq s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i = 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let neq s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i = 0 then Ct (Bool false) :: xs else Ct (Bool true) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+
+let lt s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i < 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let gt s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i > 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let le s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i <= 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let ge s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i >= 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let or_ s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Bool bx, Ct Bool by -> Ct (Bool (bx || by)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let and_ s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Bool bx, Ct Bool by -> Ct (Bool (bx && by)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let xor s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Bool bx, Ct Bool by -> Ct (Bool ((bx || by) && (not bx || not by))) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let not s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Bool b -> Ct (Bool (not b)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let neg s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i -> Ct (Int (-i)) :: xs
+    | Ct Nat i -> Ct (Int (Rnat.to_int i)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let abs s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i >= 0 then Ct (Nat (Rnat.of_int i)) :: xs else Ct (Nat (Rnat.of_int(-i))) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let isnat s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Int i ->
+      if i >= 0 then Some (Ct (Nat (Rnat.of_int i))) :: xs else None :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let int s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Ct Nat i -> Ct (Int (Rnat.to_int i)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+let add s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Int ix, Ct Int iy -> Raml.tick(1.0); Ct (Int (ix + iy)) :: xs
+    | Ct Int ix, Ct Nat iy -> Raml.tick(1.0); Ct (Int (ix + (Rnat.to_int iy))) :: xs
+    | Ct Nat ix, Ct Int iy -> Raml.tick(1.0); Ct (Int ((Rnat.to_int ix) + iy)) :: xs
+    | Ct Nat ix, Ct Nat iy -> Raml.tick(1.0); Ct (Nat (Rnat.add ix iy)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let sub s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Int ix, Ct Int iy -> Ct (Int (ix - iy)) :: xs
+    | Ct Int ix, Ct Nat iy -> Ct (Int (ix - (Rnat.to_int iy))) :: xs
+    | Ct Nat ix, Ct Int iy -> Ct (Int ((Rnat.to_int ix) - iy)) :: xs
+    | Ct Nat ix, Ct Nat iy -> Ct (Int ((Rnat.to_int ix) - (Rnat.to_int iy))) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let mult s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Int ix, Ct Int iy -> Ct (Int (ix * iy)) :: xs
+    | Ct Int ix, Ct Nat iy -> Ct (Int (ix * (Rnat.to_int iy))) :: xs
+    | Ct Nat ix, Ct Int iy -> Ct (Int ((Rnat.to_int ix) * iy)) :: xs
+    | Ct Nat ix, Ct Nat iy -> Ct (Nat (Rnat.mult ix iy)) :: xs
+    | _ -> raise Invalid_argument
+  end
+
+let ediv s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Int ix, Ct Int iy ->
+      Rnat.ifz (Rnat.of_int iy)
+        (fun () -> None :: xs)
+        (fun n' -> Some (Pair (Ct (Int (ix / iy)), Ct (Nat (Rnat.of_int (ix mod iy))))) :: xs)
+    | Ct Int ix, Ct Nat iy ->
+      Rnat.ifz iy
+        (fun () -> None :: xs)
+        (fun n' -> Some (Pair (Ct (Int (ix / (Rnat.to_int iy))), Ct (Nat (Rnat.of_int (ix mod (Rnat.to_int iy)))))) :: xs)
+    | Ct Nat ix, Ct Int iy ->
+      Rnat.ifz (Rnat.of_int iy)
+        (fun () -> None :: xs)
+        (fun n' -> Some (Pair (Ct (Int ((Rnat.to_int ix) / iy)), Ct (Nat (Rnat.of_int ((Rnat.to_int ix) mod iy))))) :: xs)
+    | Ct Nat ix, Ct Nat iy ->
+      Rnat.ifz iy
+        (fun () -> None :: xs)
+        (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in Some (Pair (Ct (Nat d), Ct (Nat m))) :: xs)
+    | _ -> raise Invalid_argument
+  end
+
+
+let rec compare s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Ct Int ix, Ct Int iy -> begin
+      if ix < iy then Ct (Int (-1)) :: xs else begin
+        if ix = iy then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+      end
+    end
+    | Ct Nat ix, Ct Nat iy -> begin
+      if Rnat.to_int ix < Rnat.to_int iy then Ct (Int (-1)) :: xs else begin
+        if Rnat.to_int ix = Rnat.to_int iy then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+      end
+    end
+    | _ -> raise Invalid_argument
+  end
+
+
+let pair s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs ->  Pair (x, y) :: xs
+
+
+let car s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Pair (a, _) -> a :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let cdr s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Pair (_, b) -> b :: xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let compare_pair s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | x :: y :: xs -> begin
+    match x, y with
+    | Pair (xa, xb), Pair (ya, yb) -> begin
+      match xa, xb, ya, yb with
+      | Ct Int ixa, Ct Int ixb, Ct Int iya, Ct Int iyb -> begin
+        if ixa = iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
+      end
+      | Ct Nat ixa, Ct Nat ixb, Ct Nat iya, Ct Nat iyb -> begin
+        if Rnat.to_int ixa = Rnat.to_int iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
+      end
+      | _ -> raise Invalid_argument
+    end
+    | _ -> raise Invalid_argument
+  end
+
+
+let empty_set s = Set [] :: s
+
+let rec mem_set_aux t l =
+  match l with
+  | [] -> Ct (Bool false)
+  | hd :: tl -> begin
+    let s = compare ((Ct t) :: (Ct hd) :: []) in begin
+      match s with
+      | [] -> raise Invalid_argument
+      | Ct Int n :: [] ->
+        if n = 1 then mem_set_aux t tl else begin
+          if n = 0 then Ct (Bool true) else Ct (Bool false)
+        end
+      | _ -> raise Invalid_argument
+    end
+  end
+
+
+let mem_set s =
+  match s with
+  | [] -> raise Invalid_argument
+  | _ :: [] -> raise Invalid_argument
+  | Ct t :: Set l :: xs -> mem_set_aux t l :: xs
+  | _ -> raise Invalid_argument
+
+
+let rec update_set_aux t b l =
+  match l with
+  | [] -> begin
+    if b then t :: [] else []
+  end
+  | hd :: tl -> begin
+    let s = compare ((Ct t) :: (Ct hd) :: []) in begin
+      match s with
+      | [] -> raise Invalid_argument
+      | Ct Int n :: [] ->
+        if n = 1 then hd :: (update_set_aux t b tl) else begin
+          if n = 0 then begin
+            if b then l else tl
+          end else begin
+            if b then t :: hd :: tl else l
+          end
+        end
+      | _ -> raise Invalid_argument
+    end
+  end
+
+
+let update_set s =
+  match s with
+  | [] | _ :: [] | _ :: _ :: [] -> raise Invalid_argument
+  | Ct t :: Ct Bool b :: Set l :: xs -> Set (update_set_aux t b l) :: xs
+  | _ -> raise Invalid_argument
+
+
+let rec iter_set_aux body l s =
+  match l with
+  | [] -> s
+  | hd :: tl -> iter_set_aux body tl (seq body ((Ct hd) :: s))
+
+
+let iter_set (body:(t list -> t list) list) s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | Set l -> iter_set_aux body l xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let rec size_set_aux l =
+  match l with
+  | [] -> Rnat.zero
+  | _ :: tl -> Rnat.add (Rnat.succ (Rnat.zero)) (size_set_aux tl)
+
+
+let size_set s =
+  match s with
+  | [] -> raise Invalid_argument
+  | Set l :: xs -> Ct (Nat (size_set_aux l)) :: xs
+  | _ -> raise Invalid_argument
+
+
+let cons s =
+  match s with
+  | [] -> raise Invalid_argument
+  | Ct t :: xs -> begin
+    match xs with
+    | [] -> raise Invalid_argument
+    | List l :: xxs -> begin
+      match t, l with
+      | Int _, Int _ :: _ | Nat _, Nat _ :: _ | Bool _, Bool _ :: _ -> List (t :: l) :: xxs
+      | _ -> raise Invalid_argument
+    end
+    | _ -> raise Invalid_argument
+  end
+  | _ -> raise Invalid_argument
+
+
+let nil s = List [] :: s
+
+
+let if_cons bt bf s =
+  match s with
+  | [] -> raise Invalid_argument
+  | List l :: xs -> begin
+    match l with
+    | [] -> seq bf xs
+    | hd :: tl -> seq bt ((Ct hd) :: (List tl) :: xs)
+  end
+  | _ -> raise Invalid_argument
+
+
+let rec map_list_aux body l (s:t list) =
+  match l with
+  | [] -> (List l) :: s
+  | hd :: tl -> let s' = seq body ((Ct hd) :: s) in begin
+    match s' with
+    | [] -> raise Invalid_argument
+    | Ct x' :: xs' -> let s'' = map_list_aux body tl xs' in begin
+      match s'' with
+      | [] -> raise Invalid_argument
+      | List l' :: xs'' -> (List (x' :: l')) :: xs''
+      | _ -> raise Invalid_argument
+    end
+    | _ -> raise Invalid_argument
+  end
+  | _ -> raise Invalid_argument
+
+
+let map_list body s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | List l -> map_list_aux body l xs
+    | _ -> raise Invalid_argument
+  end
+
+
+let rec iter_list_aux body l s =
+  match l with
+  | [] -> s
+  | hd :: tl -> iter_list_aux body tl (seq body ((Ct hd) :: s))
+
+let iter_list body s =
+  match s with
+  | [] -> raise Invalid_argument
+  | x :: xs -> begin
+    match x with
+    | List l -> iter_list_aux body l xs
+    | _ -> raise Invalid_argument
+  end
+
+let _ = update_set [Ct (Int 4); Ct (Bool false); Set [Int 2; Int 3; Int 4; Int 6];]
+
+(*let sum p s =
+  seq
+  [car; dup; dup; gt; loop (Rnat.of_int p) [(*push (Ct (Int (-1))); add; dup; dip (Rnat.of_int 1) [add]; dup; gt*)];
+  drop (Rnat.of_int 1); nil; pair]
+  (Pair (Ct (Int p), Ct (Int s)) :: [])
+
+let _ = sum 100 0*)
+
+(*let f p s =
+  seq [car; dup; gt; loop (Rnat.of_int p) [push (Ct (Int (-1))); add; dup; gt]; nil; pair]
+  (Pair (Ct (Int p), Ct (Int s)) :: [])
+
+let _ = f 10 0*)
+
+let g p s =
+  seq [car; dip1 [push (Ct (Int 0))]; iter_list [add]; nil; pair]
+  (Pair (List p, Ct s) :: [])
+
+let _ = g [Int 1; Int 2; Int 3; Int 4] (Int 0)

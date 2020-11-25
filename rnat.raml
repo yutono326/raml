@@ -1,0 +1,22 @@
+let _ = Rnat.succ (Rnat.zero)
+
+let _ = Rnat.ifz Rnat.zero
+          (fun () -> Rnat.zero)
+	  (fun n' -> Rnat.succ (Rnat.succ n')  )
+let _ = Rnat.ifz (Rnat.succ Rnat.zero)
+          (fun () -> Rnat.zero )
+	  (fun n' -> Rnat.succ (Rnat.succ Rnat.zero)  )
+
+let five = Rnat.succ (Rnat.succ (Rnat.succ (Rnat.succ (Rnat.succ Rnat.zero))))
+let ten =  Rnat.succ (Rnat.succ (Rnat.succ (Rnat.succ (Rnat.succ five))))
+let arr = Rarray.make ten 0
+let _ = Rarray.set arr five 3
+
+let three = Rnat.of_int 3
+
+let _ = Rnat.mult five five
+let _ = Rnat.add five five
+let _ = Rnat.minus ten three
+let _ = Rnat.to_int ten
+let _ = Rnat.div_mod ten three
+let _ = Rnat.minusc 3 ten
