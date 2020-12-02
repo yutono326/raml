@@ -1,19 +1,14 @@
 exception Invalid_argument
 
 type ct =
-  Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int |
-  Timestamp of int | Address of int
+  Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int | Timestamp of int | Address of int
 
 and t =
-  Failed | Ct of ct | Unit | None | Some of t | List of t' list | Set of ct list |
-  Operation | Contract of t | Pair of t * t
-
-and t' =
-  Ct' of ct | Unit' | None' | Some' of t' | Set' of ct list |
-  Operation' | Contract' of t' | Pair' of t' * t'
+  Failed | Ct of ct | Unit | None | Some of t | LNil | LCons of t * t | Set of ct list | Operation | Contract of t | Pair of t * t
 
 
 let failwith s = Failed :: []
+
 
 let rec seq body s =
   match body with
@@ -56,7 +51,8 @@ let rec dip n code s =
       | [] | Failed :: _ -> Failed :: []
       | x :: xs -> x :: dip n' code xs)
 
-let drop1 s=
+
+let drop1 s =
   match s with
   | [] | Failed :: _ -> Failed :: []
   | _ :: xs -> xs
@@ -436,59 +432,39 @@ let if_none bt bf s =
   | _ -> Failed :: []
 
 
-let rec convert t =
-  match t with
-  | Ct ct -> Ct' ct
-  | Unit -> Unit'
-  | None -> None'
-  | Some t -> Some' (convert t)
-  | Set l -> Set' l
-  | Operation -> Operation'
-  | Contract t -> Contract' (convert t)
-  | Pair (t1, t2) -> Pair' (convert t1, convert t2)
-  | _ -> raise Invalid_argument
-
-let rec convert' t' =
-  match t' with
-  | Ct' ct -> Ct ct
-  | Unit' -> Unit
-  | None' -> None
-  | Some' t' -> Some (convert' t')
-  | Set' l -> Set l
-  | Operation' -> Operation
-  | Contract' t' -> Contract (convert' t')
-  | Pair' (t1', t2') -> Pair (convert' t1', convert' t2')
-
 let cons s =
   match s with
-  | t :: List l :: xs -> List ((convert t) :: l) :: xs
+  | t :: LNil :: xs -> LCons (t, LNil) :: xs
+  | t :: LCons (hd, tl) :: xs -> LCons (t, LCons (hd, tl)) :: xs
   | _ -> Failed :: []
 
 
 let nil s =
   match s with
   | Failed :: _ -> Failed :: []
-  | _ -> List [] :: s
+  | _ -> LNil :: s
 
 
 let if_cons bt bf s =
   match s with
-  | List l :: xs -> begin
-    match l with
-    | [] -> seq bf xs
-    | hd :: tl -> seq bt ((convert' hd) :: (List tl) :: xs)
-  end
+  | LNil :: xs -> seq bf xs
+  | LCons (hd, tl) :: xs -> seq bt (hd :: tl :: xs)
   | _ -> Failed :: []
 
 
-let rec map_list_aux body l s =
-  match l with
-  | [] -> List [] :: s
-  | hd :: tl -> let s' = seq body ((convert' hd) :: s) in begin
+let rec map_list_aux body hd tl s =
+  let s' = seq body (hd :: s) in begin
     match s' with
-    | x' :: xs' -> let s'' = map_list_aux body tl xs' in begin
-      match s'' with
-      | List l' :: xs'' -> (List ((convert x') :: l')) :: xs''
+    | x' :: xs' -> begin
+      match tl with
+      | LNil -> LCons (x', LNil) :: xs'
+      | LCons (hd', tl') ->
+        let s'' = map_list_aux body hd' tl' xs' in begin
+          match s'' with
+          | LNil :: xs'' -> LCons (x', LNil) :: xs''
+          | LCons (hd'', tl'') :: xs'' -> LCons (x', LCons (hd'', tl'')) :: xs''
+          | _ -> Failed :: []
+        end
       | _ -> Failed :: []
     end
     | _ -> Failed :: []
@@ -497,29 +473,36 @@ let rec map_list_aux body l s =
 
 let map_list body s =
   match s with
-  | List l :: xs -> map_list_aux body l xs
+  | LNil :: xs -> s
+  | LCons (hd, tl) :: xs -> map_list_aux body hd tl xs
   | _ -> Failed :: []
 
-let rec size_list_aux l =
-  match l with
-  | [] -> Rnat.zero
-  | _ :: tl -> Rnat.add (Rnat.succ (Rnat.zero)) (size_list_aux tl)
+let rec size_list_aux tl =
+  match tl with
+  | LNil -> Rnat.zero
+  | LCons (_, tl) -> Rnat.add (Rnat.succ (Rnat.zero)) (size_list_aux tl)
+  | _ -> Rnat.zero
 
 
 let size_list s =
   match s with
-  | List l :: xs -> Ct (Nat (size_list_aux l)) :: xs
+  | LNil :: xs -> Ct (Nat (Rnat.zero)) :: xs
+  | LCons (_, tl) :: xs -> Ct (Nat (Rnat.add (Rnat.of_int 1) (size_list_aux tl))) :: xs
   | _ -> Failed :: []
 
 
-let rec iter_list_aux body l s =
-  match l with
-  | [] -> s
-  | hd :: tl -> iter_list_aux body tl (seq body ((convert' hd) :: s))
+let rec iter_list_aux body hd tl s =
+  let s' = seq body (hd :: s) in begin
+    match tl with
+    | LNil -> s'
+    | LCons (hd', tl') -> iter_list_aux body hd' tl' s'
+    | _ -> Failed :: []
+  end
 
 let iter_list body s =
   match s with
-  | List l :: xs -> iter_list_aux body l xs
+  | LNil :: xs -> xs
+  | LCons (hd, tl) :: xs -> iter_list_aux body hd tl xs
   | _ -> Failed :: []
 
 let contract s p =
