@@ -1,3 +1,6 @@
+(* https://better-call.dev/delphinet/KT1DtE3TQXS8L1NNg1xxWCXJB4nWKHEeiFbR/code *)
+
+
 exception Invalid_argument
 
 type ct =
@@ -5,8 +8,10 @@ type ct =
   Timestamp of int | Address of int
 
 and t =
-  Ct of ct | Unit | None | Some of t |(* List of t list |*) Set of ct list | Nil | Cons of t * t |
+  Ct of ct | Unit | None | Some of t | List of ct list | Set of ct list |
   Operation | Contract of t | Pair of t * t
+
+
 
 let rec seq (body:(t list -> t list) list) s =
   match body with
@@ -415,15 +420,18 @@ let if_none bt bf s =
 
 let cons s =
   match s with
-  | Ct t :: Nil :: xs -> Cons (Ct t, Nil) :: xs
-  | Ct t :: Cons (hd, tl) :: xs -> Cons (Ct t, (Cons (hd, tl))) :: xs
+  | Ct t :: List l :: xs -> begin
+    match t, l with
+    | Int _, Int _ :: _ | Nat _, Nat _ :: _ | Bool _, Bool _ :: _ -> List (t :: l) :: xs
+    | _ -> raise Invalid_argument
+  end
   | _ -> raise Invalid_argument
 
 
-let nil s = Nil :: s
+let nil s = List [] :: s
 
 
-(*let if_cons bt bf s =
+let if_cons bt bf s =
   match s with
   | List l :: xs -> begin
     match l with
@@ -463,7 +471,7 @@ let iter_list body s =
   | List l :: xs-> iter_list_aux body l xs
   | _ -> raise Invalid_argument
 
-let contract s p =
+let contract p s =
   match s with
   | Ct Address a :: xs -> begin
     match p with
@@ -476,27 +484,22 @@ let contract s p =
 let transfer_tokens s =
   match s with
   | x :: Ct Mutez m :: Contract c :: xs -> Operation :: xs
-  | _ -> raise Invalid_argument*)
+  | _ -> raise Invalid_argument
 
 
-let _ = update_set [Ct (Int 4); Ct (Bool false); Set [Int 2; Int 3; Int 4; Int 6];]
+let unpair s =
+  seq [dup; car; dip1 [cdr]] s
 
-(*let sum p s =
+
+let _ =
   seq
-  [car; dup; dup; gt; loop (Rnat.of_int p) [(*push (Ct (Int (-1))); add; dup; dip1 [add]; dup; gt*)];
-  drop (Rnat.of_int 1); nil; pair]
-  (Pair (Ct (Int p), Ct (Int s)) :: [])
+  [nil; dig (Rnat.of_int 1); dup; car; dip1 [cdr]; drop1; push (Ct (Address 1)); contract Unit;
+  if_none [push (Ct (String))] []; push (Ct (Address 1)); contract Unit; if_none [push (Ct (String))] [];
+  dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3);
+  push (Ct (Mutez Rnat.zero)); push Unit; transfer_tokens; cons; (*dip1 [dig (Rnat.of_int 3); drop1];
+  dug (Rnat.of_int 3); dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 1); dup;
+  dug (Rnat.of_int 2); push (Ct (Mutez Rnat.zero)); push Unit; transfer_tokens; cons;
+  dip1 [dig (Rnat.of_int 3); drop1]; dug (Rnat.of_int 3); drop (Rnat.of_int 2); dig (Rnat.of_int 1); pair*)]
+  (Pair (Unit, Unit) :: [])
 
-let _ = sum 100 0
-
-let f p s =
-  seq [car; dup; gt; loop (Rnat.of_int p) [push (Ct (Int (-1))); add; dup; gt]; nil; pair]
-  (Pair (Ct (Int p), Ct (Int s)) :: [])
-
-let _ = f 10 0
-
-let g p s =
-  seq [car; dip1 [drop1]; iter_list [add]; (*loop (Rnat.of_int 100) [abs];*) nil; pair]
-  (Pair (List p, Ct s) :: [])
-
-let _ = g [Int 1; Int 2; Int 3; Int 4] (Int 0)*)
+(*let _ = unpair (Pair (Unit, Unit) :: [])*)

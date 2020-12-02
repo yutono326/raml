@@ -343,7 +343,7 @@ let empty_set s =
   | Failed :: _ -> Failed :: []
   | _ -> T (Set []) :: s
 
-(*let rec mem_set_aux t l =
+let rec mem_set_aux t l =
   match l with
   | [] -> T (Ct (Bool false))
   | hd :: tl -> begin
@@ -388,7 +388,7 @@ let rec update_set_aux t b l =
 let update_set s =
   match s with
   | T Ct t :: T Ct Bool b :: T Set l :: xs -> T (Set (update_set_aux t b l)) :: xs
-  | _ -> Failed :: []*)
+  | _ -> Failed :: []
 
 
 let rec iter_set_aux body l s =
@@ -512,4 +512,4 @@ let transfer_tokens s =
   | _ -> Failed :: []
 
 
-let _ = drop1 [T (Ct (Int 1)); T (Ct (Int 2))]
+let _ = [ ]
