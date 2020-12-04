@@ -23,7 +23,7 @@
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
-let standard_library_default = "/Users/onoyuto/.opam/4.06.0/lib/ocaml"
+let standard_library_default = "/home/lab8/y.ono/.opam/4.06.0/lib/ocaml"
 
 let standard_library =
   try
@@ -34,7 +34,7 @@ let standard_library =
   with Not_found ->
     standard_library_default
 
-let standard_runtime = "/Users/onoyuto/.opam/4.06.0/bin/ocamlrun"
+let standard_runtime = "/home/lab8/y.ono/.opam/4.06.0/bin/ocamlrun"
 let ccomp_type = "cc"
 let bytecomp_c_compiler = "gcc -m64 -fno-defer-pop -Wall -D_FILE_OFFSET_BITS=64 -D_REENTRANT "
 let bytecomp_c_libraries = "-lcurses -lpthread"
