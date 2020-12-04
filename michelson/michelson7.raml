@@ -452,7 +452,7 @@ let if_cons bt bf s =
   | _ -> Failed :: []
 
 
-(*let rec map_list_aux body hd tl s =
+let rec map_list_aux body hd tl s =
   let s' = seq body (hd :: s) in begin
     match s' with
     | x' :: xs' -> begin
@@ -475,7 +475,7 @@ let map_list body s =
   match s with
   | LNil :: xs -> s
   | LCons (hd, tl) :: xs -> map_list_aux body hd tl xs
-  | _ -> Failed :: []*)
+  | _ -> Failed :: []
 
 let rec size_list_aux tl =
   match tl with

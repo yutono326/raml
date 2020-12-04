@@ -1,0 +1,2 @@
+true: package(core), package(ppx_jane), use_clp
+true: thread, rectypes
