@@ -1,7 +1,7 @@
 exception Invalid_argument
 
 type ct =
-  Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int | Timestamp of int | Address of int
+  Int of int | Nat of int | String | Mutez of int | Bool of bool | Keyhash of int | Timestamp of int | Address of int
 
 and t =
   Failed | Ct of ct | Unit | None | Some of t | LNil | LCons of t * t | Set of ct list | Operation | Contract of t | Pair of t * t
@@ -16,7 +16,7 @@ let rec seq body s =
   | op :: l -> seq l (op s)
 
 
-let if_ bt bf s =
+(*let if_ bt bf s =
   match s with
   | Ct Bool b :: xs -> if b then seq bt xs else seq bf xs
   | _ ->  Failed :: []
@@ -492,7 +492,7 @@ let iter_list body s =
   match s with
   | LNil :: xs -> xs
   | LCons (hd, tl) :: xs -> iter_list_aux body hd tl xs
-  | _ -> Failed :: []
+  | _ -> Failed :: []*)
 
 let contract p s =
   match s with
@@ -508,7 +508,3 @@ let transfer_tokens s =
   match s with
   | _ :: Ct Mutez _ :: Contract _ :: xs -> Operation :: xs
   | _ -> Failed :: []
-
-
-
-let _ = 1

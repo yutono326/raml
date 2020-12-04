@@ -455,21 +455,12 @@ let if_cons bt bf s =
   | _ -> Failed :: []
 
 
-let rec map_list_aux body hd tl s =
-  let s' = seq body (hd :: s) in begin
-    match s' with
-    | x' :: xs' -> begin
-      match tl with
-      | LNil -> LCons (x', LNil) :: xs'
-      | LCons (hd', tl') ->
-        let s'' = map_list_aux body hd' tl' xs' in begin
-          match s'' with
-          | LNil :: xs'' -> LCons (x', LNil) :: xs''
-          | LCons (hd'', tl'') :: xs'' -> LCons (x', LCons (hd'', tl'')) :: xs''
-          | _ -> Failed :: []
-        end
-      | _ -> Failed :: []
-    end
+(*let rec map_list_aux body hd tl s =
+  let (x' :: xs') = seq body (hd :: s) in begin
+    match tl with
+    | LNil -> LCons (x', LNil) :: xs'
+    | LCons (hd', tl') ->
+      let (x'' :: xs'') = map_list_aux body hd' tl' xs' in LCons (x', x'') :: xs''
     | _ -> Failed :: []
   end
 
@@ -478,7 +469,7 @@ let map_list body s =
   match s with
   | LNil :: xs -> s
   | LCons (hd, tl) :: xs -> map_list_aux body hd tl xs
-  | _ -> Failed :: []
+  | _ -> Failed :: []*)
 
 let rec size_list_aux tl =
   match tl with
@@ -495,12 +486,10 @@ let size_list s =
 
 
 let rec iter_list_aux body hd tl s =
-  let s' = seq body (hd :: s) in begin
-    match tl with
-    | LNil -> s'
-    | LCons (hd', tl') -> iter_list_aux body hd' tl' s'
-    | _ -> Failed :: []
-  end
+  match tl with
+  | LNil -> seq body (hd :: s)
+  | LCons (hd', tl') -> iter_list_aux body hd' tl' (seq body (hd :: s))
+  | _ -> Failed :: []
 
 let iter_list body s =
   match s with
@@ -508,7 +497,7 @@ let iter_list body s =
   | LCons (hd, tl) :: xs -> iter_list_aux body hd tl xs
   | _ -> Failed :: []
 
-let contract s p =
+let contract p s =
   match s with
   | Ct Address a :: xs -> begin
     match p with
@@ -523,14 +512,13 @@ let transfer_tokens s =
   | _ :: Ct Mutez _ :: Contract _ :: xs -> Operation :: xs
   | _ -> Failed :: []
 
-
 let unpair s =
   seq [dup; car; dip1 [cdr]] s
 
 
 let _ =
   seq
-  [nil; dig (Rnat.of_int 1); dup; car; dip1 [cdr]; drop1; push (Ct (Address 1)); contract Unit;
+  [nil; dig (Rnat.of_int 1); unpair; drop1; push (Ct (Address 1)); contract Unit;
   if_none [push (Ct (String))] []; push (Ct (Address 1)); contract Unit; if_none [push (Ct (String))] [];
   dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3);
   push (Ct (Mutez Rnat.zero)); push Unit; transfer_tokens; cons; dip1 [dig (Rnat.of_int 3); drop1];

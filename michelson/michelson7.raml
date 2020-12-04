@@ -16,7 +16,7 @@ let rec seq body s =
   | op :: l -> seq l (op s)
 
 
-(*let if_ bt bf s =
+let if_ bt bf s =
   match s with
   | Ct Bool b :: xs -> if b then seq bt xs else seq bf xs
   | _ ->  Failed :: []
@@ -429,7 +429,7 @@ let if_none bt bf s =
   match s with
   | None :: xs -> seq bt xs
   | Some x :: xs -> seq bf (x :: xs)
-  | _ -> Failed :: []*)
+  | _ -> Failed :: []
 
 
 let cons s =
@@ -494,7 +494,7 @@ let iter_list body s =
   | LCons (hd, tl) :: xs -> iter_list_aux body hd tl xs
   | _ -> Failed :: []
 
-let contract s p =
+let contract p s =
   match s with
   | Ct Address a :: xs -> begin
     match p with
