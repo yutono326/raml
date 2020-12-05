@@ -1,3 +1,6 @@
+(* https://better-call.dev/mainnet/KT1M2Gng6zuDEy7PFivXPDYgrNnYEfLsc1z1/code *)
+
+
 exception Invalid_argument
 
 type ct =
@@ -496,13 +499,8 @@ let iter_list body s =
 
 let contract p s =
   match s with
-  | Ct Address a :: xs -> begin
-    match p with
-    | Unit -> Some (Contract Unit) :: xs
-    | _ -> None :: xs
-  end
+  | Ct Address a :: xs -> Some (Contract p) :: xs
   | _ -> Failed :: []
-
 
 let transfer_tokens s =
   match s with
@@ -511,4 +509,5 @@ let transfer_tokens s =
 
 
 
-let _ = 1
+let _ =
+  seq [dup; cdr; swap; car; nil; dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3); car; contract (Pair (Pair (Ct (Address 1), Ct (Nat (Rnat.zero)))), (Pair (Ct String, Ct (Nat (Rnat.of_int 2))))); ]

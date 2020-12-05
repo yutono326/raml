@@ -496,11 +496,7 @@ let iter_list body s =
 
 let contract p s =
   match s with
-  | Ct Address a :: xs -> begin
-    match p with
-    | Unit -> Some (Contract Unit) :: xs
-    | _ -> None :: xs
-  end
+  | Ct Address a :: xs -> Some (Contract p) :: xs
   | _ -> Failed :: []
 
 
@@ -510,4 +506,6 @@ let transfer_tokens s =
   | _ -> Failed :: []
 
 
-let _ = 1
+let _ =
+   seq [(*car; push (Ct (Int 0)); swap; *)iter_list [add]; (*nil; pair*)]
+   [Pair (LCons (Ct (Int 1), LCons (Ct (Int 2), LCons (Ct (Int 3), LNil))), Ct (Int 0))]
