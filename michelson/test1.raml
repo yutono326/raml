@@ -83,25 +83,35 @@ let swap s =
   | _ -> Failed :: []
 
 
-let rec append l1 l2 =
-  match l1 with
-  | [] -> l2
-  | x::xs -> x::(append xs l2)
+let rec dig_aux1 n s =
+  Rnat.ifz n
+    (fun () -> begin
+      match s with
+      | [] | Failed :: _ -> Failed
+      | x :: xs -> x
+    end)
+    (fun n' -> begin
+      match s with
+      | [] | Failed :: _ -> Failed
+      | x :: xs -> dig_aux1 n' xs
+    end)
 
-let rec dig_aux n s' s =
+let rec dig_aux2 n s =
   Rnat.ifz n
     (fun () -> begin
       match s with
       | [] | Failed :: _ -> Failed :: []
-      | x :: xs -> append (x :: s') xs
+      | x :: xs -> xs
     end)
     (fun n' -> begin
       match s with
       | [] | Failed :: _ -> Failed :: []
-      | x :: xs -> dig_aux n' (append s' [x]) xs
+      | x :: xs -> x :: dig_aux2 n' xs
     end)
 
-let dig n s = dig_aux n [] s
+
+let dig n s = (dig_aux1 n s) :: (dig_aux2 n s)
+
 
 
 let rec dug n s =
