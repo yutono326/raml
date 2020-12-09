@@ -1,3 +1,5 @@
+exception Invalid_argument
+
 type  t =
   Failed | Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int | Timestamp of int | Address of int | Unit | None | Some of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | Contract of t | Pair of t * t
 
@@ -253,7 +255,7 @@ let mult s =
   | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix * iy) :: xs
   | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix * (Rnat.to_int iy)) :: xs
   | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) * iy) :: xs
-  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Nat (Rnat.mult ix iy)):: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Nat (Rnat.mult ix iy):: xs
   | Mutez mx :: Nat iy :: xs -> Raml.tick(1.0); Mutez (Rnat.mult mx iy) :: xs
   | Nat ix :: Mutez my :: xs -> Raml.tick(1.0); Mutez (Rnat.mult ix my) :: xs
   | _ -> Failed :: []
@@ -275,7 +277,7 @@ let ediv s =
   | Mutez mx :: Nat iy :: xs ->
     Rnat.ifz iy
       (fun () -> None :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod mx iy in Some (Pair (Mutez d, CMutez m)) :: xs)
+      (fun n' -> let (d, m, _) = Rnat.div_mod mx iy in Some (Pair (Mutez d, Mutez m)) :: xs)
   | Mutez mx :: Mutez my :: xs ->
     Rnat.ifz my
       (fun () -> None :: xs)
@@ -354,13 +356,12 @@ let rec mem_set_aux t hd tl =
     if n = 1 then begin
       match tl with
       | SNil -> Bool false
-      | SCons (hd' tl') -> mem_set_aux t hd' tl'
+      | SCons (hd', tl') -> mem_set_aux t hd' tl'
       | _ -> Failed
     end else begin
       if n = 0 then Bool true else Bool false
     end
   | _ -> Failed
-  end
 
 let mem_set s =
   match s with
@@ -375,7 +376,7 @@ let rec update_set_aux1 t hd tl =
     if n = 1 then begin
       match tl with
       | SNil -> SCons (hd, SCons (t, SNil))
-      | SCons (hd' tl') -> SCons (hd, update_set_aux1 t hd' tl')
+      | SCons (hd', tl') -> SCons (hd, update_set_aux1 t hd' tl')
       | _ -> Failed
     end else begin
       if n = 0 then SCons (hd, tl) else SCons (t, SCons (hd, tl))
@@ -388,7 +389,7 @@ let rec update_set_aux2 t hd tl =
     if n = 1 then begin
       match tl with
       | SNil -> SCons (hd, SNil)
-      | SCons (hd' tl') -> SCons (hd, update_set_aux2 t hd' tl')
+      | SCons (hd', tl') -> SCons (hd, update_set_aux2 t hd' tl')
       | _ -> Failed
     end else begin
       if n = 0 then SCons (tl, SNil) else SCons (hd, tl)
@@ -397,17 +398,18 @@ let rec update_set_aux2 t hd tl =
 
 let update_set s =
   match s with
-  | t :: Bool true :: SNil :: xs -> SCons (t, SNil) :: xs
-  | _ :: Bool false :: SNil :: xs -> SNil :: xs
-  | t :: Bool true :: SCon (hd, tl) :: xs -> (update_set_aux1 t hd tl) :: xs
-  | t :: Bool false :: SCon (hd, tl) :: xs -> (update_set_aux2 t hd tl) :: xs
+  | t :: Bool b :: SNil :: xs ->
+    if b then SCons (t, SNil) :: xs else SNil :: xs
+  | t :: Bool b :: SCons (hd, tl) :: xs ->
+    if b then (update_set_aux1 t hd tl) :: xs else (update_set_aux2 t hd tl) :: xs
   | _ -> Failed :: []
 
 
 let rec iter_set_aux body hd tl s =
   match tl with
   | SNil -> seq body (hd :: s)
-  | SCons (hd' tl') -> iter_set_aux body hd' tl' (seq body (hd :: s))
+  | SCons (hd', tl') -> iter_set_aux body hd' tl' (seq body (hd :: s))
+  | _ -> Failed :: []
 
 
 let iter_set body s =
@@ -421,7 +423,7 @@ let rec size_set_aux tl =
   match tl with
   | SNil -> Rnat.zero
   | SCons (_, tl') -> Rnat.add (Rnat.of_int 1) (size_set_aux tl')
-
+  | _ -> Rnat.zero
 
 let size_set s =
   match s with
@@ -521,11 +523,6 @@ let transfer_tokens s =
   match s with
   | _ :: Mutez _ :: Contract _ :: xs -> Operation :: xs
   | _ -> Failed :: []
-
-
-let _ =
-   seq [(*car; push (Ct (Int 0)); swap; *)iter_list [add]; (*nil; pair*)]
-   [Pair (LCons (Ct (Int 1), LCons (Ct (Int 2), LCons (Ct (Int 3), LNil))), Ct (Int 0))]
 
 
 let _ = dig (Rnat.of_int 3) [ (Int 1); (Int 2); (Int 3); (Int 4)]
