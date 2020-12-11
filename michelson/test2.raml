@@ -674,5 +674,5 @@ let transfer_tokens s =
 
 
 let _ =
-  seq [dup; cdr; swap; car; nil; dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3); car; contract (Pair (Pair (Ct (Address 0), Ct (Nat (Rnat.zero))), Pair (Ct String, Ct (Nat (Rnat.of_int 2))))); if_none [(*push (Ct (Int 18));*) failwith] []; push (Ct (Mutez Rnat.zero)); dig (Rnat.of_int 4); dup; dug (Rnat.of_int 5); cdr; dig (Rnat.of_int 4); dup; dug (Rnat.of_int 5); cdr; cdr; pair; dig (Rnat.of_int 4); dup; cdr; car; swap; car; pair; pair; transfer_tokens; cons; swap; dup; car; swap; cdr; push (Ct (Nat (Rnat.of_int 1))); add; swap; pair; swap; pair]
-  (Pair (Pair (Ct (Address 0), Pair (Ct (Nat Rnat.zero), Ct String)), Pair (Ct (Address 1), Ct (Nat (Rnat.of_int 1)))) :: [])
+  seq [dup; cdr; swap; car; nil; dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3); car; contract (Pair (Pair (Address 0, Nat Rnat.zero), Pair (String, Nat (Rnat.of_int 2)))); if_none [(*push (Int 18);*) failwith] []; push (Mutez Rnat.zero); dig (Rnat.of_int 4); dup; dug (Rnat.of_int 5); cdr; dig (Rnat.of_int 4); dup; dug (Rnat.of_int 5); cdr; cdr; pair; dig (Rnat.of_int 4); dup; cdr; car; swap; car; pair; pair; transfer_tokens; cons; swap; dup; car; swap; cdr; push (Nat (Rnat.of_int 1)); add; swap; pair; swap; pair]
+  (Pair (Pair (Address 0, Pair (Nat Rnat.zero, String)), Pair (Address 1, Nat (Rnat.of_int 1))) :: [])
