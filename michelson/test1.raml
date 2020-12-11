@@ -3,11 +3,8 @@
 
 exception Invalid_argument
 
-type ct =
-  Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int | Timestamp of int | Address of int
-
-and t =
-  Failed | Ct of ct | Unit | None | Some of t | LNil | LCons of t * t | Set of ct list | Operation | Contract of t | Pair of t * t
+type  t =
+  Failed | Int of int | Nat of Rnat.t | String | Mutez of Rnat.t | Bool of bool | Keyhash of int | Timestamp of int | Address of int | Unit | None | Some of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | Contract of t | Pair of t * t | MNil | MCons of t * t * t
 
 
 let failwith s = Failed :: []
@@ -21,7 +18,7 @@ let rec seq body s =
 
 let if_ bt bf s =
   match s with
-  | Ct Bool b :: xs -> if b then seq bt xs else seq bf xs
+  | Bool b :: xs -> if b then seq bt xs else seq bf xs
   | _ ->  Failed :: []
 
 
@@ -31,13 +28,13 @@ let rec loop_aux n body s =
     (fun n' ->
       let s' = seq body s in
       match s' with
-      | Ct Bool b :: xs -> if b then loop_aux n' body xs else xs
+      | Bool b :: xs -> if b then loop_aux n' body xs else xs
       | _ -> Failed :: [])
 
 
 let loop n body s =
   match s with
-  | Ct Bool b :: xs -> if b then loop_aux n body xs else xs
+  | Bool b :: xs -> if b then loop_aux n body xs else xs
   | _ -> Failed :: []
 
 
@@ -45,6 +42,7 @@ let dip1 code s =
   match s with
   | [] | Failed :: _ -> Failed :: []
   | x :: xs -> x :: seq code xs
+
 
 let rec dip n code s =
   Rnat.ifz n
@@ -113,7 +111,6 @@ let rec dig_aux2 n s =
 let dig n s = (dig_aux1 n s) :: (dig_aux2 n s)
 
 
-
 let rec dug n s =
   Rnat.ifz n
     (fun () -> s)
@@ -139,177 +136,178 @@ let unit s =
 
 let eq s =
   match s with
-  | Ct Int i :: xs ->
-    if i = 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+  | Int i :: xs ->
+    if i = 0 then Bool true :: xs else Bool false :: xs
   | _ -> Failed :: []
 
 
 let neq s =
   match s with
-  | Ct Int i :: xs ->
-    if i = 0 then Ct (Bool false) :: xs else Ct (Bool true) :: xs
+  | Int i :: xs ->
+    if i = 0 then Bool false :: xs else Bool true :: xs
   | _ -> Failed :: []
 
 
 let lt s =
   match s with
-  | Ct Int i :: xs ->
-    if i < 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+  | Int i :: xs ->
+    if i < 0 then Bool true :: xs else Bool false :: xs
   | _ -> Failed :: []
 
 
 let gt s =
   match s with
-  | Ct Int i :: xs ->
-    if i > 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+  | Int i :: xs ->
+    if i > 0 then Bool true :: xs else Bool false :: xs
   | _ -> Failed :: []
 
 
 let le s =
   match s with
-  | Ct Int i :: xs ->
-    if i <= 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+  | Int i :: xs ->
+    if i <= 0 then Bool true :: xs else Bool false :: xs
   | _ -> Failed :: []
 
 
 let ge s =
   match s with
-  | Ct Int i :: xs ->
-    if i >= 0 then Ct (Bool true) :: xs else Ct (Bool false) :: xs
+  | Int i :: xs ->
+    if i >= 0 then Bool true :: xs else Bool false :: xs
   | _ -> Failed :: []
 
 
 let or_ s =
   match s with
-  | Ct Bool bx :: Ct Bool by :: xs -> Ct (Bool (bx || by)) :: xs
+  | Bool bx :: Bool by :: xs -> Bool (bx || by) :: xs
   | _ -> Failed :: []
 
 
 let and_ s =
   match s with
-  | Ct Bool bx :: Ct Bool by :: xs -> Ct (Bool (bx && by)) :: xs
+  | Bool bx :: Bool by :: xs -> Bool (bx && by) :: xs
   | _ -> Failed :: []
 
 
 let xor s =
   match s with
-  | Ct Bool bx :: Ct Bool by :: xs -> Ct (Bool ((bx || by) && (not bx || not by))) :: xs
+  | Bool bx :: Bool by :: xs -> Bool ((bx || by) && (not bx || not by)) :: xs
   | _ -> Failed :: []
 
 
 let not_ s =
   match s with
-  | Ct Bool b :: xs -> Ct (Bool (not b)) :: xs
+  | Bool b :: xs -> Bool (not b) :: xs
   | _ ->  Failed :: []
 
 
 let neg s =
   match s with
-  | Ct Int i :: xs -> Ct (Int (-i)) :: xs
-  | Ct Nat i :: xs -> Ct (Int (-(Rnat.to_int i))) :: xs
+  | Int i :: xs -> Int (-i) :: xs
+  | Nat i :: xs -> Int (-(Rnat.to_int i)) :: xs
   | _ -> Failed :: []
 
 
 let abs s =
   match s with
-  | Ct Int i :: xs ->
-    if i >= 0 then Ct (Nat (Rnat.of_int i)) :: xs else Ct (Nat (Rnat.of_int(-i))) :: xs
+  | Int i :: xs ->
+    if i >= 0 then Nat (Rnat.of_int i) :: xs else Nat (Rnat.of_int(-i)) :: xs
   | _ -> Failed :: []
 
 
 let isnat s =
   match s with
-  | Ct Int i :: xs ->
-    if i >= 0 then Some (Ct (Nat (Rnat.of_int i))) :: xs else None :: xs
+  | Int i :: xs ->
+    if i >= 0 then Some (Nat (Rnat.of_int i)) :: xs else None :: xs
   | _ -> Failed :: []
 
 
 let int s =
   match s with
-  | Ct Nat i :: xs -> Ct (Int (Rnat.to_int i)) :: xs
+  | Nat i :: xs -> Int (Rnat.to_int i) :: xs
   | _ -> Failed :: []
 
 
 let add s =
   match s with
-  | Ct Int ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int (ix + iy)) :: xs
-  | Ct Int ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Int (ix + (Rnat.to_int iy))) :: xs
-  | Ct Nat ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int ((Rnat.to_int ix) + iy)) :: xs
-  | Ct Nat ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Nat (Rnat.add ix iy)) :: xs
-  | Ct Timestamp tx :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Timestamp (tx + iy)) :: xs
-  | Ct Int ix :: Ct Timestamp ty :: xs -> Raml.tick(1.0); Ct (Timestamp (ix + ty)) :: xs
-  | Ct Mutez mx :: Ct Mutez my :: xs -> Raml.tick(1.0); Ct (Mutez (Rnat.add mx my)) :: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix + iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix + (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) + iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Nat (Rnat.add ix iy) :: xs
+  | Timestamp tx :: Int iy :: xs -> Raml.tick(1.0); Timestamp (tx + iy) :: xs
+  | Int ix :: Timestamp ty :: xs -> Raml.tick(1.0); Timestamp (ix + ty) :: xs
+  | Mutez mx :: Mutez my :: xs -> Raml.tick(1.0); Mutez (Rnat.add mx my) :: xs
   | _ -> Failed :: []
 
 
 let sub s =
   match s with
-  | Ct Int ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int (ix - iy)) :: xs
-  | Ct Int ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Int (ix - (Rnat.to_int iy))) :: xs
-  | Ct Nat ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int ((Rnat.to_int ix) - iy)) :: xs
-  | Ct Nat ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Int ((Rnat.to_int ix) - (Rnat.to_int iy))) :: xs
-  | Ct Timestamp tx :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Timestamp (tx - iy)) :: xs
-  | Ct Timestamp tx :: Ct Timestamp ty :: xs -> Raml.tick(1.0); Ct (Timestamp (tx - ty)) :: xs
-  | Ct Mutez mx :: Ct Mutez my :: xs -> Raml.tick(1.0);
-    let (m, _) = Rnat.minus mx my in Ct (Mutez m) :: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix - iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix - (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) - iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0);
+    let (m, _) = Rnat.minus ix iy in Nat m :: xs
+  | Timestamp tx :: Int iy :: xs -> Raml.tick(1.0); Timestamp (tx - iy) :: xs
+  | Timestamp tx :: Timestamp ty :: xs -> Raml.tick(1.0); Timestamp (tx - ty) :: xs
+  | Mutez mx :: Mutez my :: xs -> Raml.tick(1.0);
+    let (m, _) = Rnat.minus mx my in Mutez m :: xs
   | _ -> Failed :: []
 
 
 let mult s =
   match s with
-  | Ct Int ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int (ix * iy)) :: xs
-  | Ct Int ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Int (ix * (Rnat.to_int iy))) :: xs
-  | Ct Nat ix :: Ct Int iy :: xs -> Raml.tick(1.0); Ct (Int ((Rnat.to_int ix) * iy)) :: xs
-  | Ct Nat ix :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Nat (Rnat.mult ix iy)) :: xs
-  | Ct Mutez mx :: Ct Nat iy :: xs -> Raml.tick(1.0); Ct (Mutez (Rnat.mult mx iy)) :: xs
-  | Ct Nat ix :: Ct Mutez my :: xs -> Raml.tick(1.0); Ct (Mutez (Rnat.mult ix my)) :: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix * iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix * (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) * iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Nat (Rnat.mult ix iy):: xs
+  | Mutez mx :: Nat iy :: xs -> Raml.tick(1.0); Mutez (Rnat.mult mx iy) :: xs
+  | Nat ix :: Mutez my :: xs -> Raml.tick(1.0); Mutez (Rnat.mult ix my) :: xs
   | _ -> Failed :: []
 
 let ediv s =
   match s with
-  | Ct Int ix :: Ct Int iy :: xs ->
-    if iy = 0 then None :: xs else Some (Pair (Ct (Int (ix / iy)), Ct (Nat (Rnat.of_int (ix mod iy))))) :: xs
-  | Ct Int ix :: Ct Nat iy :: xs ->
+  | Int ix :: Int iy :: xs ->
+    if iy = 0 then None :: xs else Some (Pair (Int (ix / iy), Nat (Rnat.of_int (ix mod iy)))) :: xs
+  | Int ix :: Nat iy :: xs ->
     Rnat.ifz iy
       (fun () -> None :: xs)
-      (fun n' -> Some (Pair (Ct (Int (ix / (Rnat.to_int iy))), Ct (Nat (Rnat.of_int (ix mod (Rnat.to_int iy)))))) :: xs)
-  | Ct Nat ix :: Ct Int iy :: xs ->
-    if iy = 0 then None :: xs else Some (Pair (Ct (Int ((Rnat.to_int ix) / iy)), Ct (Nat (Rnat.of_int ((Rnat.to_int ix) mod iy))))) :: xs
-  | Ct Nat ix :: Ct Nat iy :: xs ->
+      (fun n' -> Some (Pair (Int (ix / (Rnat.to_int iy)), Nat (Rnat.of_int (ix mod (Rnat.to_int iy))))) :: xs)
+  | Nat ix :: Int iy :: xs ->
+    if iy = 0 then None :: xs else Some (Pair (Int ((Rnat.to_int ix) / iy), Nat (Rnat.of_int ((Rnat.to_int ix) mod iy)))) :: xs
+  | Nat ix :: Nat iy :: xs ->
     Rnat.ifz iy
       (fun () -> None :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in Some (Pair (Ct (Nat d), Ct (Nat m))) :: xs)
-  | Ct Mutez mx :: Ct Nat iy :: xs ->
+      (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in Some (Pair (Nat d, Nat m)) :: xs)
+  | Mutez mx :: Nat iy :: xs ->
     Rnat.ifz iy
       (fun () -> None :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod mx iy in Some (Pair (Ct (Mutez d), Ct (Mutez m))) :: xs)
-  | Ct Mutez mx :: Ct Mutez my :: xs ->
+      (fun n' -> let (d, m, _) = Rnat.div_mod mx iy in Some (Pair (Mutez d, Mutez m)) :: xs)
+  | Mutez mx :: Mutez my :: xs ->
     Rnat.ifz my
       (fun () -> None :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod mx my in Some (Pair (Ct (Nat d), Ct (Mutez m))) :: xs)
+      (fun n' -> let (d, m, _) = Rnat.div_mod mx my in Some (Pair (Nat d, Mutez m)) :: xs)
   | _ -> Failed :: []
 
 
 let rec compare s =
   match s with
-  | Ct Int ix :: Ct Int iy :: xs -> begin
-    if ix < iy then Ct (Int (-1)) :: xs else begin
-      if ix = iy then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+  | Int ix :: Int iy :: xs -> begin
+    if ix < iy then Int (-1) :: xs else begin
+      if ix = iy then Int 0 :: xs else Int 1 :: xs
     end
   end
-  | Ct Nat ix :: Ct Nat iy :: xs -> begin
-    if Rnat.to_int ix < Rnat.to_int iy then Ct (Int (-1)) :: xs else begin
-      if Rnat.to_int ix = Rnat.to_int iy then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+  | Nat ix :: Nat iy :: xs -> begin
+    if Rnat.to_int ix < Rnat.to_int iy then Int (-1) :: xs else begin
+      if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
     end
   end
-  | Ct Timestamp tx :: Ct Timestamp ty :: xs -> begin
-    if tx < ty then Ct (Int (-1)) :: xs else begin
-      if tx = ty then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+  | Timestamp tx :: Timestamp ty :: xs -> begin
+    if tx < ty then Int (-1) :: xs else begin
+      if tx = ty then Int 0 :: xs else Int 1 :: xs
     end
   end
-  | Ct Mutez mx :: Ct Mutez my :: xs -> begin
-    if Rnat.to_int mx < Rnat.to_int my then Ct (Int (-1)) :: xs else begin
-      if Rnat.to_int mx = Rnat.to_int my then Ct (Int 0) :: xs else Ct (Int 1) :: xs
+  | Mutez mx :: Mutez my :: xs -> begin
+    if Rnat.to_int mx < Rnat.to_int my then Int (-1) :: xs else begin
+      if Rnat.to_int mx = Rnat.to_int my then Int 0 :: xs else Int 1 :: xs
     end
   end
   | _ -> Failed :: []
@@ -338,10 +336,10 @@ let compare_pair s =
   match s with
   | Pair (xa, xb) :: Pair (ya, yb) :: xs -> begin
     match xa, xb, ya, yb with
-    | Ct Int ixa, Ct Int ixb, Ct Int iya, Ct Int iyb -> begin
+    | Int ixa, Int ixb, Int iya, Int iyb -> begin
       if ixa = iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
-    | Ct Nat ixa, Ct Nat ixb, Ct Nat iya, Ct Nat iyb -> begin
+    | Nat ixa, Nat ixb, Nat iya, Nat iyb -> begin
       if Rnat.to_int ixa = Rnat.to_int iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
     | _ -> Failed :: []
@@ -352,79 +350,225 @@ let compare_pair s =
 let empty_set s =
   match s with
   | Failed :: _ -> Failed :: []
-  | _ -> Set [] :: s
+  | _ -> SNil :: s
 
-let rec mem_set_aux t l =
-  match l with
-  | [] -> Ct (Bool false)
-  | hd :: tl -> begin
-    let s = compare (Ct t :: Ct hd :: []) in begin
-      match s with
-      | Ct Int n :: [] ->
-        if n = 1 then mem_set_aux t tl else begin
-          if n = 0 then Ct (Bool true) else Ct (Bool false)
-        end
+
+let rec mem_set_aux t hd tl =
+  match (compare (t :: hd :: []))  with
+  | Int n :: [] ->
+    if n = 1 then begin
+      match tl with
+      | SNil -> Bool false
+      | SCons (hd', tl') -> mem_set_aux t hd' tl'
       | _ -> Failed
+    end else begin
+      if n = 0 then Bool true else Bool false
     end
-  end
-
+  | _ -> Failed
 
 let mem_set s =
   match s with
-  | Ct t :: Set l :: xs -> mem_set_aux t l :: xs
+  | _ :: SNil :: xs -> Bool false :: xs
+  | t :: SCons (hd, tl) :: xs -> mem_set_aux t hd tl :: xs
   | _ -> Failed :: []
 
 
-let rec update_set_aux t b l =
-  match l with
-  | [] -> begin
-    if b then t :: [] else []
-  end
-  | hd :: tl -> begin
-    let s = compare (Ct t :: Ct hd :: []) in begin
-      match s with
-      | Ct Int n :: [] ->
-        if n = 1 then hd :: (update_set_aux t b tl) else begin
-          if n = 0 then begin
-            if b then l else tl
-          end else begin
-            if b then t :: hd :: tl else l
-          end
-        end
-      | _ -> []
+let rec update_set_aux1 t hd tl =
+  match (compare (t :: hd :: [])) with
+  | Int n :: [] ->
+    if n = 1 then begin
+      match tl with
+      | SNil -> SCons (hd, SCons (t, SNil))
+      | SCons (hd', tl') -> SCons (hd, update_set_aux1 t hd' tl')
+      | _ -> Failed
+    end else begin
+      if n = 0 then SCons (hd, tl) else SCons (t, SCons (hd, tl))
     end
-  end
+  | _ -> Failed
 
+let rec update_set_aux2 t hd tl =
+  match (compare (t :: hd :: [])) with
+  | Int n :: [] ->
+    if n = 1 then begin
+      match tl with
+      | SNil -> SCons (hd, SNil)
+      | SCons (hd', tl') -> SCons (hd, update_set_aux2 t hd' tl')
+      | _ -> Failed
+    end else begin
+      if n = 0 then SCons (tl, SNil) else SCons (hd, tl)
+    end
+  | _ -> Failed
 
 let update_set s =
   match s with
-  | Ct t :: Ct Bool b :: Set l :: xs -> Set (update_set_aux t b l) :: xs
+  | t :: Bool b :: SNil :: xs ->
+    if b then SCons (t, SNil) :: xs else SNil :: xs
+  | t :: Bool b :: SCons (hd, tl) :: xs ->
+    if b then (update_set_aux1 t hd tl) :: xs else (update_set_aux2 t hd tl) :: xs
   | _ -> Failed :: []
 
 
-let rec iter_set_aux body l s =
-  match l with
-  | [] -> s
-  | hd :: tl -> iter_set_aux body tl (seq body (Ct hd :: s))
+let rec iter_set_aux body hd tl s =
+  match tl with
+  | SNil -> seq body (hd :: s)
+  | SCons (hd', tl') -> iter_set_aux body hd' tl' (seq body (hd :: s))
+  | _ -> Failed :: []
 
 
 let iter_set body s =
   match s with
-  | Set l :: xs -> iter_set_aux body l xs
+  | SNil :: xs -> xs
+  | SCons (hd, tl):: xs -> iter_set_aux body hd tl xs
   | _ -> Failed :: []
 
 
-let rec size_set_aux l =
-  match l with
-  | [] -> Rnat.zero
-  | _ :: tl -> Rnat.add (Rnat.succ (Rnat.zero)) (size_set_aux tl)
-
+let rec size_set_aux tl =
+  match tl with
+  | SNil -> Rnat.zero
+  | SCons (_, tl') -> Rnat.add (Rnat.of_int 1) (size_set_aux tl')
+  | _ -> Rnat.zero
 
 let size_set s =
   match s with
-  | Set l :: xs -> Ct (Nat (size_set_aux l)) :: xs
+  | SNil :: xs -> Nat Rnat.zero :: xs
+  | SCons (_, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_set_aux tl)) :: xs
   | _ -> Failed :: []
 
+
+let empty_map s =
+  match s with
+  | Failed :: _ -> Failed :: []
+  | _ -> MNil :: s
+
+
+let rec get_map_aux t k v tl =
+  match (compare (t :: k :: [])) with
+  | Int n :: [] -> begin
+    if n = 1 then begin
+      match tl with
+      | MNil -> None
+      | MCons (k', v', tl') -> get_map_aux t k' v' tl'
+      | _ -> Failed
+    end else begin
+      if n = 0 then Some v else None
+    end
+  end
+  | _ -> Failed
+
+let get_map s =
+  match s with
+  | _ :: MNil :: xs -> None :: xs
+  | t :: MCons (k, v, tl) :: xs -> get_map_aux t k v tl :: xs
+  | _ -> Failed :: []
+
+
+let rec mem_map_aux t k v tl =
+  match (compare (t :: k :: [])) with
+  | Int n :: [] -> begin
+    if n = 1 then begin
+      match tl with
+      | MNil -> Bool false
+      | MCons (k', v', tl') -> mem_map_aux t k' v' tl'
+      | _ -> Failed
+    end else begin
+      if n = 0 then Bool true else Bool false
+    end
+  end
+  | _ -> Failed
+
+let mem_map s =
+  match s with
+  | _ :: MNil :: xs -> Bool false :: xs
+  | t :: MCons (k, v, tl) :: xs -> mem_map_aux t k v tl :: xs
+  | _ -> Failed :: []
+
+
+let rec update_map_aux1 t k v tl =
+  match (compare (t :: k :: [])) with
+  | Int n :: [] -> begin
+    if n = 1 then begin
+      match tl with
+      | MNil -> MCons (k, v, MNil)
+      | MCons (k', v', tl') -> MCons (k, v, update_map_aux1 t k' v' tl')
+      | _ -> Failed
+    end else begin
+      if n = 0 then tl else MCons (k, v, tl)
+    end
+  end
+  | _ -> Failed
+
+let rec update_map_aux2 t x k v tl =
+  match (compare (t :: k :: [])) with
+  | Int n :: [] -> begin
+    if n = 1 then begin
+      match tl with
+      | MNil -> MCons (k, v, MCons (t, x, tl))
+      | MCons (k', v', tl') -> MCons (k, v, update_map_aux2 t x k' v' tl')
+      | _ -> Failed
+    end else begin
+      if n = 0 then MCons (k, x, tl) else MCons (t, x, MCons (k, v, tl))
+    end
+  end
+  | _ -> Failed
+
+let update_map s =
+  match s with
+  | _ :: None :: MNil :: xs -> MNil :: xs
+  | t :: Some x :: MNil :: xs -> MCons (t, x, MNil) :: xs
+  | t :: None :: MCons (k, v, tl) :: xs -> update_map_aux1 t k v tl :: xs
+  | t :: Some x :: MCons (k, v, tl) :: xs -> update_map_aux2 t x k v tl :: xs
+  | _ -> Failed :: []
+
+
+(*let rec map_map_aux body k v tl s =
+  match tl with
+  | MNil -> begin
+    match (seq body (Pair (k, v) :: s)) with
+    | [] -> Failed :: []
+    | v' :: xs' -> MCons (k, v', MNil) :: xs'
+  end
+  | MCons (k', v', tl') -> begin
+    match (seq body (Pair (k, v) :: s)) with
+    | [] -> Failed :: []
+    | v' :: xs' -> begin
+      match (map_map_aux body k' v' tl' xs') with
+      | [] -> Failed :: []
+      | tl'' :: xs'' -> MCons (k, v', tl'') :: xs''
+    end
+  end
+  | _ -> Failed :: []
+
+let map_map body s =
+  match s with
+  | MNil :: xs -> s
+  | MCons (k, v, tl) :: xs -> map_map_aux body k v tl xs
+  | _ -> Failed :: []*)
+
+
+let rec iter_map_aux body k v tl s =
+  match tl with
+  | MNil -> seq body (Pair (k, v) :: s)
+  | MCons (k', v', tl') -> iter_map_aux body k' v' tl' (seq body (Pair (k, v) :: s))
+  | _ -> Failed :: []
+
+let iter_map body s =
+  match s with
+  | MNil :: xs -> xs
+  | MCons (k, v, tl) :: xs -> iter_map_aux body k v tl xs
+  | _ -> Failed :: []
+
+
+let rec size_map_aux tl =
+  match tl with
+  | MNil -> Rnat.zero
+  | MCons (_, _, tl') -> Rnat.add (Rnat.of_int 1) (size_map_aux tl')
+  | _ -> Rnat.zero
+
+let size_map s =
+  match s with
+  | MNil :: xs -> Nat (Rnat.zero) :: xs
+  | MCons (_, _, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_map_aux tl)) :: xs
+  | _ -> Failed :: []
 
 let some s =
   match s with
@@ -465,33 +609,42 @@ let if_cons bt bf s =
   | _ -> Failed :: []
 
 
-(*let rec map_list_aux body hd tl s =
-  let (x' :: xs') = seq body (hd :: s) in begin
-    match tl with
-    | LNil -> LCons (x', LNil) :: xs'
-    | LCons (hd', tl') ->
-      let (x'' :: xs'') = map_list_aux body hd' tl' xs' in LCons (x', x'') :: xs''
-    | _ -> Failed :: []
+let rec map_list_aux body hd tl s =
+  match tl with
+  | LNil -> begin
+    match (seq body (hd :: s)) with
+    | [] -> Failed :: []
+    | x' :: xs' -> LCons (x', LNil) :: xs'
   end
+  | LCons (hd', tl') -> begin
+    match (seq body (hd :: s)) with
+    | [] -> Failed :: []
+    | x' :: xs' -> begin
+      match (map_list_aux body hd' tl' xs') with
+      | [] -> Failed :: []
+      | x'' :: xs'' -> LCons (x', x'') :: xs''
+    end
+  end
+  | _ -> Failed :: []
 
 
 let map_list body s =
   match s with
   | LNil :: xs -> s
   | LCons (hd, tl) :: xs -> map_list_aux body hd tl xs
-  | _ -> Failed :: []*)
+  | _ -> Failed :: []
 
 let rec size_list_aux tl =
   match tl with
   | LNil -> Rnat.zero
-  | LCons (_, tl) -> Rnat.add (Rnat.succ (Rnat.zero)) (size_list_aux tl)
+  | LCons (_, tl') -> Rnat.add (Rnat.of_int 1) (size_list_aux tl')
   | _ -> Rnat.zero
 
 
 let size_list s =
   match s with
-  | LNil :: xs -> Ct (Nat (Rnat.zero)) :: xs
-  | LCons (_, tl) :: xs -> Ct (Nat (Rnat.add (Rnat.of_int 1) (size_list_aux tl))) :: xs
+  | LNil :: xs -> Nat (Rnat.zero) :: xs
+  | LCons (_, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_list_aux tl)) :: xs
   | _ -> Failed :: []
 
 
@@ -509,26 +662,19 @@ let iter_list body s =
 
 let contract p s =
   match s with
-  | Ct Address a :: xs -> begin
-    match p with
-    | Unit -> Some (Contract Unit) :: xs
-    | _ -> None :: xs
-  end
+  | Address a :: xs -> Some (Contract p) :: xs
   | _ -> Failed :: []
 
 
 let transfer_tokens s =
   match s with
-  | _ :: Ct Mutez _ :: Contract _ :: xs -> Operation :: xs
+  | _ :: Mutez _ :: Contract _ :: xs -> Operation :: xs
   | _ -> Failed :: []
-
-let unpair s =
-  seq [dup; car; dip1 [cdr]] s
 
 
 let _ =
   seq
-  [nil; dig (Rnat.of_int 1); unpair; drop1; push (Ct (Address 1)); contract Unit;
+  [nil; dig (Rnat.of_int 1); dup; car; dip1 [car]; drop1; push (Ct (Address 1)); contract Unit;
   if_none [push (Ct (String))] []; push (Ct (Address 1)); contract Unit; if_none [push (Ct (String))] [];
   dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3);
   push (Ct (Mutez Rnat.zero)); push Unit; transfer_tokens; cons; dip1 [dig (Rnat.of_int 3); drop1];

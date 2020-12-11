@@ -13,7 +13,7 @@ let rec seq body s =
   | op :: l -> seq l (op s)
 
 
-(*let if_ bt bf s =
+let if_ bt bf s =
   match s with
   | Bool b :: xs -> if b then seq bt xs else seq bf xs
   | _ ->  Failed :: []
@@ -517,7 +517,7 @@ let update_map s =
   | _ -> Failed :: []
 
 
-let rec map_map_aux body k v tl s =
+(*let rec map_map_aux body k v tl s =
   match tl with
   | MNil -> begin
     match (seq body (Pair (k, v) :: s)) with

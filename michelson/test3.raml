@@ -1,3 +1,6 @@
+(* https://better-call.dev/delphinet/KT1DtE3TQXS8L1NNg1xxWCXJB4nWKHEeiFbR/code *)
+
+
 exception Invalid_argument
 
 type  t =
@@ -517,7 +520,7 @@ let update_map s =
   | _ -> Failed :: []
 
 
-let rec map_map_aux body k v tl s =
+(*let rec map_map_aux body k v tl s =
   match tl with
   | MNil -> begin
     match (seq body (Pair (k, v) :: s)) with
@@ -539,7 +542,7 @@ let map_map body s =
   match s with
   | MNil :: xs -> s
   | MCons (k, v, tl) :: xs -> map_map_aux body k v tl xs
-  | _ -> Failed :: []
+  | _ -> Failed :: []*)
 
 
 let rec iter_map_aux body k v tl s =
@@ -669,4 +672,4 @@ let transfer_tokens s =
   | _ -> Failed :: []
 
 
-let _ = seq [nil; dig (Rnat.of_int 1); dup; car; dip1 [car]; drop1; push (Address 0); contract Unit; if_none [push String; failwith] []; push (Address 1); contract Unit; if_none [push String; failwith] []; dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3); push (Mutez Rnat.zero); push Unit; transfer_tokens; cons; dip1 [dig (Rnat.of_int 3); drop1]; dug (Rnat.of_int 3); dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 1); dup; dug (Rnat.of_int 2); push (Mutez Rnat.zero); push Unit; transfer_tokens; cons; dip1 [dig (Rnat.of_int 3); drop1]; dug (Rnat.of_int 3); drop (Rnat.of_int 2); dig (Rnat.of_int 1); pair] (Pair (Unit, Unit) :: [])
+let _ = seq [nil; dig (Rnat.of_int 1); dup; car; (*dip1 [car];*) drop1; push (Address 0); contract Unit; (*if_none [push String; failwith] [];*) push (Address 1); contract Unit; (*if_none [push String; failwith] [];*) dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 2); dup; dug (Rnat.of_int 3); push (Mutez Rnat.zero); push Unit; transfer_tokens; cons; (*dip1 [dig (Rnat.of_int 3); drop1];*) dug (Rnat.of_int 3); dig (Rnat.of_int 3); dup; dug (Rnat.of_int 4); dig (Rnat.of_int 1); dup; dug (Rnat.of_int 2); push (Mutez Rnat.zero); push Unit; transfer_tokens; cons; (*dip1 [dig (Rnat.of_int 3); drop1];*) dug (Rnat.of_int 3); drop (Rnat.of_int 2); dig (Rnat.of_int 1); pair] (Pair (Unit, Unit) :: [])
