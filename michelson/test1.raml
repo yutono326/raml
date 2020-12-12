@@ -402,7 +402,7 @@ let update_map s =
   | t :: MSome x :: MCons (k, v, tl) :: xs -> update_map_aux2 t x k v tl :: xs
   | _ -> raise Invalid_argument
 
-let rec map_map_aux body k v tl s =
+(*let rec map_map_aux body k v tl s =
   match tl with
   | MNil -> begin
     match (body (Pair (k, v) :: s)) with
@@ -424,7 +424,7 @@ let map_map body s =
   match s with
   | MNil :: xs -> s
   | MCons (k, v, tl) :: xs -> map_map_aux body k v tl xs
-  | _ -> raise Invalid_argument
+  | _ -> raise Invalid_argument*)
 
 let rec iter_map_aux body k v tl s =
   match tl with
