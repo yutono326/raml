@@ -537,49 +537,28 @@ let transfer_tokens s =
   | _ -> raise Invalid_argument
 
 
-(* https://better-call.dev/mainnet/KT1M2Gng6zuDEy7PFivXPDYgrNnYEfLsc1z1/code *)
-
+(* receive pair (int, int) as parameter and output its sum *)
 let _ =
   (
-    dup |>
-    cdr |>
-    swap |>
     car |>
-    nil |>
-    dig (Rnat.of_int 2) |>
-    dup |>
-    dug (Rnat.of_int 3) |>
-    car |>
-    contract |>
-    if_none (push (Int 18) |> failwith) skip |>
-    push Mutez |>
-    dig (Rnat.of_int 4) |>
-    dup |>
-    dug (Rnat.of_int 5) |>
-    cdr |>
-    dig (Rnat.of_int 4) |>
-    dup |>
-    dug (Rnat.of_int 5) |>
-    cdr |> cdr |>
-    pair |>
-    dig (Rnat.of_int 4) |>
-    dup |>
-    cdr |> car |>
-    swap |>
-    car |>
-    pair |>
-    pair |>
-    transfer_tokens |>
-    cons |>
-    swap |>
     dup |>
     car |>
-    swap |>
-    push (Nat (Rnat.of_int 1)) |>
+    dip (Rnat.of_int 1) cdr |>
     add |>
-    swap |>
-    pair |>
-    swap |>
+    nil |>
     pair
   )
-  (Pair (Pair (Address, Pair (Nat Rnat.zero, MString)), Pair (Address, Nat (Rnat.of_int 1))) :: [])
+  (Pair (Pair (Int 3, Int 5),  Int 0) :: [])
+
+
+(* receive int list as parameter and output its sum *)
+(* not success *)
+let _ =
+  (
+    car |>
+    dip (Rnat.of_int 1) (push (Int 0)) |>
+    iter_list add |>
+    nil |>
+    pair
+  )
+  (Pair (LCons (Int 1, LCons (Int 2, LCons (Int 3, LCons (Int 4, LNil)))), Int 0) :: [])
