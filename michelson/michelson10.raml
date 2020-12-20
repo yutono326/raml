@@ -559,45 +559,4 @@ let transfer_tokens s =
   | _ -> raise Invalid_argument
 
 
-(* https://better-call.dev/delphinet/KT1DtE3TQXS8L1NNg1xxWCXJB4nWKHEeiFbR/code *)
-
-let _ =
-  ( nil |>
-    dig (Rnat.of_int 1) |>
-    dup |> car |> dip (Rnat.of_int 1) cdr |>
-    drop (Rnat.of_int 1) |>
-    push Address |>
-    contract |>
-    if_none (push MString |> failwith) skip |>
-    push Address |>
-    contract |>
-    if_none (push MString |> failwith) skip |>
-    dig (Rnat.of_int 3) |>
-    dup |>
-    dug (Rnat.of_int 4) |>
-    dig (Rnat.of_int 2) |>
-    dup |>
-    dug (Rnat.of_int 3) |>
-    push Mutez |>
-    push Unit |>
-    transfer_tokens |>
-    cons |>
-    dip (Rnat.of_int 1) (dig (Rnat.of_int 3) |> drop (Rnat.of_int 1)) |>
-    dug (Rnat.of_int 3) |>
-    dig (Rnat.of_int 3) |>
-    dup |>
-    dug (Rnat.of_int 4) |>
-    dig (Rnat.of_int 1) |>
-    dup |>
-    dug (Rnat.of_int 2) |>
-    push Mutez |>
-    push Unit |>
-    transfer_tokens |>
-    cons |>
-    dip (Rnat.of_int 1) (dig (Rnat.of_int 3) |> drop (Rnat.of_int 1)) |>
-    dug (Rnat.of_int 3) |>
-    drop (Rnat.of_int 2) |>
-    dig (Rnat.of_int 1) |>
-    pair
-  )
-  (Pair (Unit, Unit) :: [])
+let _ = 1
