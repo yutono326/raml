@@ -26,13 +26,13 @@ let max (m: int) (n : int) =
 
 let failwith s = raise Invalid_argument
 
-let skip s = s
+let nop s = Raml.tick(70.0); s
 
-let (|>) f g = fun s -> g (f s)
+let (|>) f g = fun s -> Raml.tick(60.0); g (f s)
 
 let if_ bt bf s =
   match s with
-  | Bool b :: xs -> if b then bt xs else bf xs
+  | Bool b :: xs -> Raml.tick(60.0); if b then bt xs else bf xs
   | _ ->  raise Invalid_argument
 
 let rec loop_aux n body s =
@@ -40,13 +40,27 @@ let rec loop_aux n body s =
     (fun () -> s)
     (fun n' ->
       match (body s) with
-      | Bool b :: xs -> if b then loop_aux n' body xs else xs
+      | _ :: xs -> loop_aux n' body xs
       | _ -> raise Invalid_argument)
 
-let loop body s =
+let loop n body s =
   match s with
-  | Bool b :: xs ->
-    if b then loop_aux (Rnat.of_int 10) body xs else xs
+  | _ :: xs -> Raml.tick(70.0); loop_aux n body xs
+  | _ -> raise Invalid_argument
+
+let rec loop_left_aux n body s =
+  Rnat.ifz n
+    (fun () -> s)
+    (fun n' ->
+      match (body s) with
+      | Left a :: xs -> loop_aux n' body (a :: xs)
+      | Right b :: xs -> b :: xs
+      | _ -> raise Invalid_argument)
+
+let loop_left body s =
+  match s with
+  | Left a :: xs -> Raml.tick(80.0); loop_left_aux (Rnat.of_int 10) body (a :: xs)
+  | Right b :: xs -> Raml.tick(80.0); b :: xs
   | _ -> raise Invalid_argument
 
 let rec dip n body s =
@@ -110,32 +124,32 @@ let unit s = Unit :: s
 
 let eq s =
   match s with
-  | Int i :: xs -> Bool (i = 0) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (i = 0) :: xs
   | _ -> raise Invalid_argument
 
 let neq s =
   match s with
-  | Int i :: xs -> Bool (not (i = 0)) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (not (i = 0)) :: xs
   | _ -> raise Invalid_argument
 
 let lt s =
   match s with
-  | Int i :: xs -> Bool (i < 0) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (i < 0) :: xs
   | _ -> raise Invalid_argument
 
 let gt s =
   match s with
-  | Int i :: xs -> Bool (i > 0) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (i > 0) :: xs
   | _ -> raise Invalid_argument
 
 let le s =
   match s with
-  | Int i :: xs -> Bool (i <= 0) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (i <= 0) :: xs
   | _ -> raise Invalid_argument
 
 let ge s =
   match s with
-  | Int i :: xs -> Bool (i >= 0) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Bool (i >= 0) :: xs
   | _ -> raise Invalid_argument
 
 let or_ s =
@@ -224,12 +238,12 @@ let ediv s =
 
 let rec compare s =
   match s with
-  | Int ix :: Int iy :: xs -> begin
+  | Int ix :: Int iy :: xs -> Raml.tick(150.0); begin
     if ix < iy then Int (-1) :: xs else begin
       if ix = iy then Int 0 :: xs else Int 1 :: xs
     end
   end
-  | Nat ix :: Nat iy :: xs -> begin
+  | Nat ix :: Nat iy :: xs -> Raml.tick(150.0); begin
     if Rnat.to_int ix < Rnat.to_int iy then Int (-1) :: xs else begin
       if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
     end
@@ -255,10 +269,10 @@ let compare_pair s =
   match s with
   | Pair (xa, xb) :: Pair (ya, yb) :: xs -> begin
     match xa, xb, ya, yb with
-    | Int ixa, Int ixb, Int iya, Int iyb -> begin
+    | Int ixa, Int ixb, Int iya, Int iyb -> Raml.tick(150.0); begin
       if ixa = iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
-    | Nat ixa, Nat ixb, Nat iya, Nat iyb -> begin
+    | Nat ixa, Nat ixb, Nat iya, Nat iyb -> Raml.tick(150.0); begin
       if Rnat.to_int ixa = Rnat.to_int iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
     | _ -> raise Invalid_argument
@@ -574,4 +588,13 @@ let transfer_tokens s =
   | _ -> raise Invalid_argument
 
 
-let _ = 1
+let _ =
+  (
+    car |>
+    dup |>
+    gt |>
+    loop (Rnat.of_int 10) (push (Int (-1)) |> add |> dup |> gt) |>
+    nil |>
+    pair
+  )
+  (Pair (Int 10, Int 0) :: [])

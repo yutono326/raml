@@ -1,12 +1,12 @@
 exception Invalid_argument
 
 type t =
-  Int of int | Nat of Rnat.t | MString | Mutez | Bool of bool | Keyhash | Timestamp | Address | Unit | MNone | MSome of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | TransferTokens | Contract | Pair of t * t | MNil | MCons of t * t * t
+  Int of int | Nat of Rnat.t | MString | Mutez | Bool of bool | Keyhash | Timestamp | Address | Unit | MNone | MSome of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | TransferTokens | Contract | Pair of t * t | Left of t | Right of t | MNil | MCons of t * t * t
 
 let rec sr n i =
   Rnat.ifz i
     (fun () -> n)
-    (fun i' -> sr (n/2) i')
+    (fun i' -> sr (n/.2.0) i')
 
 (*let rec numbits_aux a n =
   Rnat.ifz n
@@ -26,13 +26,13 @@ let max (m: int) (n : int) =
 
 let failwith s = raise Invalid_argument
 
-let skip s = s
+let nop s = Raml.tick(70.0); s
 
-let (|>) f g = fun s -> g (f s)
+let (|>) f g = fun s -> Raml.tick(60.0); g (f s)
 
 let if_ bt bf s =
   match s with
-  | Bool b :: xs -> if b then bt xs else bf xs
+  | Bool b :: xs -> Raml.tick(60.0); if b then bt xs else bf xs
   | _ ->  raise Invalid_argument
 
 let rec loop_aux n body s =
@@ -40,13 +40,27 @@ let rec loop_aux n body s =
     (fun () -> s)
     (fun n' ->
       match (body s) with
-      | Bool b :: tl -> if b then loop_aux n' body tl else tl
+      | _ :: xs -> loop_aux n' body xs
       | _ -> raise Invalid_argument)
 
-let loop body s =
+let loop n body s =
   match s with
-  | Bool b :: tl ->
-    if b then loop_aux (Rnat.of_int 10) body tl else tl
+  | _ :: xs -> Raml.tick(70.0); loop_aux n body xs
+  | _ -> raise Invalid_argument
+
+let rec loop_left_aux n body s =
+  Rnat.ifz n
+    (fun () -> s)
+    (fun n' ->
+      match (body s) with
+      | Left a :: xs -> loop_aux n' body (a :: xs)
+      | Right b :: xs -> b :: xs
+      | _ -> raise Invalid_argument)
+
+let loop_left body s =
+  match s with
+  | Left a :: xs -> Raml.tick(80.0); loop_left_aux (Rnat.of_int 10) body (a :: xs)
+  | Right b :: xs -> Raml.tick(80.0); b :: xs
   | _ -> raise Invalid_argument
 
 let rec dip n body s =
@@ -54,7 +68,7 @@ let rec dip n body s =
     (fun () -> Raml.tick(100.0); body s)
     (fun n' ->
       match s with
-      | hd :: tl -> Raml.tick(4.0); hd :: (dip n' body tl)
+      | x :: xs -> Raml.tick(4.0); x :: (dip n' body xs)
       | _ -> raise Invalid_argument)
 
 let rec drop n s =
@@ -62,7 +76,7 @@ let rec drop n s =
     (fun () -> Raml.tick(100.0); s)
     (fun n' ->
       match s with
-      | _ :: tl -> Raml.tick(4.0); drop n' tl
+      | _ :: xs -> Raml.tick(4.0); drop n' xs
       | _ -> raise Invalid_argument)
 
 let dup s =
@@ -79,29 +93,29 @@ let rec dig_aux n s =
   Rnat.ifz n
     (fun () ->
       match s with
-      | hd :: tl -> Raml.tick(100.0); hd, tl
+      | x :: xs -> Raml.tick(100.0); x, xs
       | _ -> raise Invalid_argument)
     (fun n' ->
       match s with
-      | hd :: tl -> Raml.tick(4.0);
-        let elm, tl' = dig_aux n' tl in
-        elm, hd :: tl'
+      | x :: xs -> Raml.tick(4.0);
+        let x', xs' = dig_aux n' xs in
+        x', x :: xs'
       | [] -> raise Invalid_argument)
 
 let dig n s =
-  let elm, tl = dig_aux n s in elm :: tl
+  let x, xs = dig_aux n s in x :: xs
 
 let rec dug_aux elm n s =
   Rnat.ifz n
     (fun () -> Raml.tick(100.0); elm :: s)
     (fun n' ->
       match s with
-      | hd :: tl -> Raml.tick(4.0); hd :: (dug_aux elm n' tl)
+      | x :: xs -> Raml.tick(4.0); x :: (dug_aux elm n' xs)
       | _ -> raise Invalid_argument)
 
 let dug n s =
   match s with
-  | hd :: tl -> dug_aux hd n tl
+  | x :: xs -> dug_aux x n xs
   | _ -> raise Invalid_argument
 
 let push elm s = Raml.tick(80.0); elm :: s
@@ -110,114 +124,113 @@ let unit s = Unit :: s
 
 let eq s =
   match s with
-  | Int i :: tl -> Bool (i = 0) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (i = 0) :: xs
   | _ -> raise Invalid_argument
 
 let neq s =
   match s with
-  | Int i :: tl -> Bool (not (i = 0)) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (not (i = 0)) :: xs
   | _ -> raise Invalid_argument
 
 let lt s =
   match s with
-  | Int i :: tl -> Bool (i < 0) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (i < 0) :: xs
   | _ -> raise Invalid_argument
 
 let gt s =
   match s with
-  | Int i :: tl -> Bool (i > 0) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (i > 0) :: xs
   | _ -> raise Invalid_argument
 
 let le s =
   match s with
-  | Int i :: tl -> Bool (i <= 0) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (i <= 0) :: xs
   | _ -> raise Invalid_argument
 
 let ge s =
   match s with
-  | Int i :: tl -> Bool (i >= 0) :: tl
+  | Int i :: xs -> Raml.tick(80.0); Bool (i >= 0) :: xs
   | _ -> raise Invalid_argument
 
 let or_ s =
   match s with
-  | Bool bx :: Bool by :: xs -> Bool (bx || by) :: xs
+  | Bool bx :: Bool by :: xs -> Raml.tick(90.0); Bool (bx || by) :: xs
   | _ -> raise Invalid_argument
 
 let and_ s =
   match s with
-  | Bool bx :: Bool by :: xs -> Bool (bx && by) :: xs
+  | Bool bx :: Bool by :: xs -> Raml.tick(100.0); Bool (bx && by) :: xs
   | _ -> raise Invalid_argument
 
 let xor s =
   match s with
-  | Bool bx :: Bool by :: xs -> Bool ((bx || by) && (not bx || not by)) :: xs
+  | Bool bx :: Bool by :: xs -> Raml.tick(100.0); Bool ((bx || by) && (not bx || not by)) :: xs
   | _ -> raise Invalid_argument
 
 let not_ s =
   match s with
-  | Bool b :: xs -> Bool (not b) :: xs
+  | Bool b :: xs -> Raml.tick(90.0); Bool (not b) :: xs
   | _ ->  raise Invalid_argument
 
 let neg s =
   match s with
-  | Int i :: xs -> Int (-i) :: xs
-  | Nat n :: xs -> Int (-(Rnat.to_int n)) :: xs
+  | Int i :: xs -> Raml.tick(80.0); Int (-i) :: xs
+  | Nat n :: xs -> Raml.tick(80.0); Int (-(Rnat.to_int n)) :: xs
   | _ -> raise Invalid_argument
 
 let abs s =
   match s with
-  | Int i :: xs ->
+  | Int i :: xs -> Raml.tick(80.0);
     if i >= 0 then Nat (Rnat.of_int i) :: xs else Nat (Rnat.of_int (-i)) :: xs
   | _ -> raise Invalid_argument
 
 let isnat s =
   match s with
-  | Int i :: xs ->
+  | Int i :: xs -> Raml.tick(80.0);
     if i >= 0 then MSome (Nat (Rnat.of_int i)) :: xs else MNone :: xs
   | _ -> raise Invalid_argument
 
 let int s =
   match s with
-  | Nat n :: xs -> Int (Rnat.to_int n) :: xs
+  | Nat n :: xs -> Raml.tick(80.0); Int (Rnat.to_int n) :: xs
   | _ -> raise Invalid_argument
 
 
 let add s =
   match s with
-  | Int ix :: Int iy :: xs ->
-    (*let v0 = max (z_bytes ix) (z_bytes iy) in Raml.tick(80.0 +. ((sr v0 (Rnat.of_int 4)) + (sr v0 (Rnat.of_int 6))));*) Raml.tick(80.0); Int (ix + iy) :: xs
-  | Int ix :: Nat iy :: xs -> Int (ix + (Rnat.to_int iy)) :: xs
-  | Nat ix :: Int iy :: xs -> Int ((Rnat.to_int ix) + iy) :: xs
-  | Nat ix :: Nat iy :: xs -> Nat (Rnat.add ix iy) :: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix + iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix + (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) + iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.add ix iy) :: xs
   | _ -> raise Invalid_argument
 
 let sub s =
   match s with
-  | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix - iy) :: xs
-  | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix - (Rnat.to_int iy)) :: xs
-  | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) - iy) :: xs
-  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) - (Rnat.to_int iy)) :: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix - iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix - (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) - iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) - (Rnat.to_int iy)) :: xs
   | _ -> raise Invalid_argument
 
 let mult s =
   match s with
-  | Int ix :: Int iy :: xs -> Raml.tick(1.0); Int (ix * iy) :: xs
-  | Int ix :: Nat iy :: xs -> Raml.tick(1.0); Int (ix * (Rnat.to_int iy)) :: xs
-  | Nat ix :: Int iy :: xs -> Raml.tick(1.0); Int ((Rnat.to_int ix) * iy) :: xs
-  | Nat ix :: Nat iy :: xs -> Raml.tick(1.0); Nat (Rnat.mult ix iy):: xs
+  | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix * iy) :: xs
+  | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix * (Rnat.to_int iy)) :: xs
+  | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) * iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.mult ix iy):: xs
   | _ -> raise Invalid_argument
 
 let ediv s =
   match s with
-  | Int ix :: Int iy :: xs ->
+  | Int ix :: Int iy :: xs -> Raml.tick(300.0);
     if iy = 0 then MNone :: xs else MSome (Pair (Int (ix / iy), Nat (Rnat.of_int (ix mod iy)))) :: xs
-  | Int ix :: Nat iy :: xs ->
+  | Int ix :: Nat iy :: xs -> Raml.tick(300.0);
     Rnat.ifz iy
       (fun () -> MNone :: xs)
       (fun n' -> MSome (Pair (Int (ix / (Rnat.to_int iy)), Nat (Rnat.of_int (ix mod (Rnat.to_int iy))))) :: xs)
-  | Nat ix :: Int iy :: xs ->
+  | Nat ix :: Int iy :: xs -> Raml.tick(300.0);
     if iy = 0 then MNone :: xs else MSome (Pair (Int ((Rnat.to_int ix) / iy), Nat (Rnat.of_int ((Rnat.to_int ix) mod iy)))) :: xs
-  | Nat ix :: Nat iy :: xs ->
+  | Nat ix :: Nat iy :: xs -> Raml.tick(300.0);
     Rnat.ifz iy
       (fun () -> MNone :: xs)
       (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in MSome (Pair (Nat d, Nat m)) :: xs)
@@ -225,12 +238,12 @@ let ediv s =
 
 let rec compare s =
   match s with
-  | Int ix :: Int iy :: xs -> begin
+  | Int ix :: Int iy :: xs -> Raml.tick(150.0); begin
     if ix < iy then Int (-1) :: xs else begin
       if ix = iy then Int 0 :: xs else Int 1 :: xs
     end
   end
-  | Nat ix :: Nat iy :: xs -> begin
+  | Nat ix :: Nat iy :: xs -> Raml.tick(150.0); begin
     if Rnat.to_int ix < Rnat.to_int iy then Int (-1) :: xs else begin
       if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
     end
@@ -239,7 +252,7 @@ let rec compare s =
 
 let pair s =
   match s with
-  | x :: y :: tl -> Raml.tick(80.0); (Pair (x, y)) :: tl
+  | x :: y :: xs -> Raml.tick(80.0); (Pair (x, y)) :: xs
   | _ -> raise Invalid_argument
 
 let car s =
@@ -256,17 +269,17 @@ let compare_pair s =
   match s with
   | Pair (xa, xb) :: Pair (ya, yb) :: xs -> begin
     match xa, xb, ya, yb with
-    | Int ixa, Int ixb, Int iya, Int iyb -> begin
+    | Int ixa, Int ixb, Int iya, Int iyb -> Raml.tick(150.0); begin
       if ixa = iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
-    | Nat ixa, Nat ixb, Nat iya, Nat iyb -> begin
+    | Nat ixa, Nat ixb, Nat iya, Nat iyb -> Raml.tick(150.0); begin
       if Rnat.to_int ixa = Rnat.to_int iya then compare (xb :: yb :: xs) else compare (xa :: ya :: xs)
     end
     | _ -> raise Invalid_argument
   end
   | _ -> raise Invalid_argument
 
-let empty_set s = SNil :: s
+let empty_set s = Raml.tick(240.0); SNil :: s
 
 let rec mem_set_aux t hd tl =
   match (compare (t :: hd :: []))  with
@@ -283,8 +296,8 @@ let rec mem_set_aux t hd tl =
 
 let mem_set s =
   match s with
-  | _ :: SNil :: xs -> Bool false :: xs
-  | t :: SCons (hd, tl) :: xs -> mem_set_aux t hd tl :: xs
+  | _ :: SNil :: xs -> Raml.tick(80.0); Bool false :: xs
+  | t :: SCons (hd, tl) :: xs -> Raml.tick(80.0); mem_set_aux t hd tl :: xs
   | _ -> raise Invalid_argument
 
 let rec update_set_aux1 t hd tl =
@@ -315,22 +328,22 @@ let rec update_set_aux2 t hd tl =
 
 let update_set s =
   match s with
-  | t :: Bool b :: SNil :: xs ->
+  | t :: Bool b :: SNil :: xs -> Raml.tick(80.0);
     if b then SCons (t, SNil) :: xs else SNil :: xs
-  | t :: Bool b :: SCons (hd, tl) :: xs ->
+  | t :: Bool b :: SCons (hd, tl) :: xs -> Raml.tick(80.0);
     if b then (update_set_aux1 t hd tl) :: xs else (update_set_aux2 t hd tl) :: xs
   | _ -> raise Invalid_argument
 
 let rec iter_set_aux body hd tl s =
   match tl with
-  | SNil -> body (hd :: s)
-  | SCons (hd', tl') -> iter_set_aux body hd' tl' (body (hd :: s))
+  | SNil -> Raml.tick(36.0); body (hd :: s)
+  | SCons (hd', tl') -> Raml.tick(36.0); iter_set_aux body hd' tl' (body (hd :: s))
   | _ -> raise Invalid_argument
 
 let iter_set body s =
   match s with
-  | SNil :: xs -> xs
-  | SCons (hd, tl):: xs -> iter_set_aux body hd tl xs
+  | SNil :: xs -> Raml.tick(80.0); xs
+  | SCons (hd, tl):: xs -> Raml.tick(80.0); iter_set_aux body hd tl xs
   | _ -> raise Invalid_argument
 
 let rec size_set_aux tl =
@@ -341,11 +354,11 @@ let rec size_set_aux tl =
 
 let size_set s =
   match s with
-  | SNil :: xs -> Nat Rnat.zero :: xs
-  | SCons (_, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_set_aux tl)) :: xs
+  | SNil :: xs -> Raml.tick(80.0); Nat Rnat.zero :: xs
+  | SCons (_, tl) :: xs -> Raml.tick(80.0); Nat (Rnat.add (Rnat.of_int 1) (size_set_aux tl)) :: xs
   | _ -> raise Invalid_argument
 
-let empty_map s = MNil :: s
+let empty_map s = Raml.tick(240.0); MNil :: s
 
 let rec get_map_aux t k v tl =
   match (compare (t :: k :: [])) with
@@ -363,8 +376,8 @@ let rec get_map_aux t k v tl =
 
 let get_map s =
   match s with
-  | _ :: MNil :: xs -> MNone :: xs
-  | t :: MCons (k, v, tl) :: xs -> get_map_aux t k v tl :: xs
+  | _ :: MNil :: xs -> Raml.tick(80.0); MNone :: xs
+  | t :: MCons (k, v, tl) :: xs -> Raml.tick(80.0); get_map_aux t k v tl :: xs
   | _ -> raise Invalid_argument
 
 let rec mem_map_aux t k v tl =
@@ -383,8 +396,8 @@ let rec mem_map_aux t k v tl =
 
 let mem_map s =
   match s with
-  | _ :: MNil :: xs -> Bool false :: xs
-  | t :: MCons (k, v, tl) :: xs -> mem_map_aux t k v tl :: xs
+  | _ :: MNil :: xs -> Raml.tick(80.0); Bool false :: xs
+  | t :: MCons (k, v, tl) :: xs -> Raml.tick(80.0); mem_map_aux t k v tl :: xs
   | _ -> raise Invalid_argument
 
 let rec update_map_aux1 t k v tl =
@@ -417,10 +430,10 @@ let rec update_map_aux2 t x k v tl =
 
 let update_map s =
   match s with
-  | _ :: MNone :: MNil :: xs -> MNil :: xs
-  | t :: MSome x :: MNil :: xs -> MCons (t, x, MNil) :: xs
-  | t :: MNone :: MCons (k, v, tl) :: xs -> update_map_aux1 t k v tl :: xs
-  | t :: MSome x :: MCons (k, v, tl) :: xs -> update_map_aux2 t x k v tl :: xs
+  | _ :: MNone :: MNil :: xs -> Raml.tick(80.0); MNil :: xs
+  | t :: MSome x :: MNil :: xs -> Raml.tick(80.0); MCons (t, x, MNil) :: xs
+  | t :: MNone :: MCons (k, v, tl) :: xs -> Raml.tick(80.0); update_map_aux1 t k v tl :: xs
+  | t :: MSome x :: MCons (k, v, tl) :: xs -> Raml.tick(80.0); update_map_aux2 t x k v tl :: xs
   | _ -> raise Invalid_argument
 
 (*let rec map_map_aux body k v tl s =
@@ -428,7 +441,7 @@ let update_map s =
   | MNil -> begin
     match (body (Pair (k, v) :: s)) with
     | [] -> raise Invalid_argument
-    | v' :: xs' -> MCons (k, v', MNil) :: xs'
+    | v' :: xs' -> Raml.tick(761.0); MCons (k, v', MNil) :: xs'
   end
   | MCons (k', v', tl') -> begin
     match (body (Pair (k, v) :: s)) with
@@ -436,27 +449,27 @@ let update_map s =
     | v' :: xs' -> begin
       match (map_map_aux body k' v' tl' xs') with
       | [] -> raise Invalid_argument
-      | tl'' :: xs'' -> MCons (k, v', tl'') :: xs''
+      | tl'' :: xs'' -> Raml.tick(761.0); MCons (k, v', tl'') :: xs''
     end
   end
   | _ -> raise Invalid_argument
 
 let map_map body s =
   match s with
-  | MNil :: xs -> s
-  | MCons (k, v, tl) :: xs -> map_map_aux body k v tl xs
+  | MNil :: xs -> Raml.tick(80.0); s
+  | MCons (k, v, tl) :: xs -> Raml.tick(80.0); map_map_aux body k v tl xs
   | _ -> raise Invalid_argument*)
 
 let rec iter_map_aux body k v tl s =
   match tl with
-  | MNil -> body (Pair (k, v) :: s)
-  | MCons (k', v', tl') -> iter_map_aux body k' v' tl' (body (Pair (k, v) :: s))
+  | MNil -> Raml.tick(40.0); body (Pair (k, v) :: s)
+  | MCons (k', v', tl') -> Raml.tick(40.0); iter_map_aux body k' v' tl' (body (Pair (k, v) :: s))
   | _ -> raise Invalid_argument
 
 let iter_map body s =
   match s with
-  | MNil :: xs -> xs
-  | MCons (k, v, tl) :: xs -> iter_map_aux body k v tl xs
+  | MNil :: xs -> Raml.tick(80.0); xs
+  | MCons (k, v, tl) :: xs -> Raml.tick(80.0); iter_map_aux body k v tl xs
   | _ -> raise Invalid_argument
 
 let rec size_map_aux tl =
@@ -467,16 +480,16 @@ let rec size_map_aux tl =
 
 let size_map s =
   match s with
-  | MNil :: xs -> Nat (Rnat.zero) :: xs
-  | MCons (_, _, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_map_aux tl)) :: xs
+  | MNil :: xs -> Raml.tick(90.0); Nat (Rnat.zero) :: xs
+  | MCons (_, _, tl) :: xs -> Raml.tick(90.0); Nat (Rnat.add (Rnat.of_int 1) (size_map_aux tl)) :: xs
   | _ -> raise Invalid_argument
 
 let some s =
   match s with
-  | x :: xs -> MSome x :: xs
+  | x :: xs -> Raml.tick(80.0); MSome x :: xs
   | _ -> raise Invalid_argument
 
-let none s = MNone :: s
+let none s = Raml.tick(80.0); MNone :: s
 
 let if_none bt bf s =
   match s with
@@ -484,17 +497,33 @@ let if_none bt bf s =
   | MSome x :: xs -> Raml.tick(80.0); bf (x :: xs)
   | _ -> raise Invalid_argument
 
+let left s =
+  match s with
+  | x :: xs -> Raml.tick(80.0); Left x :: xs
+  | _ -> raise Invalid_argument
+
+let right s =
+  match s with
+  | x :: xs -> Raml.tick(80.0); Right x :: xs
+  | _ -> raise Invalid_argument
+
+let if_left bt bf s =
+  match s with
+  | Left a :: xs -> Raml.tick(90.0); bt (a :: xs)
+  | Right b :: xs -> Raml.tick(90.0); bf (b :: xs)
+  | _ -> raise Invalid_argument
+
 let cons s =
   match s with
-  | hd1 :: hd2 :: tl -> Raml.tick(80.0); (LCons (hd1, hd2)) :: tl
+  | x :: y :: xs -> Raml.tick(80.0); (LCons (x, y)) :: xs
   | _ -> raise Invalid_argument
 
 let nil s = Raml.tick(80.0); LNil :: s
 
 let if_cons bt bf s =
   match s with
-  | LNil :: xs -> bf xs
-  | LCons (hd, tl) :: xs -> bt (hd :: tl :: xs)
+  | LNil :: xs -> Raml.tick(110.0); bf xs
+  | LCons (hd, tl) :: xs -> Raml.tick(110.0); bt (hd :: tl :: xs)
   | _ -> raise Invalid_argument
 
 let rec map_list_aux body hd tl s =
@@ -502,7 +531,7 @@ let rec map_list_aux body hd tl s =
   | LNil -> begin
     match (body (hd :: s)) with
     | [] -> raise Invalid_argument
-    | x' :: xs' -> LCons (x', LNil) :: xs'
+    | x' :: xs' -> Raml.tick(12.0); LCons (x', LNil) :: xs'
   end
   | LCons (hd', tl') -> begin
     match (body (hd :: s)) with
@@ -510,15 +539,15 @@ let rec map_list_aux body hd tl s =
     | x' :: xs' -> begin
       match (map_list_aux body hd' tl' xs') with
       | [] -> raise Invalid_argument
-      | x'' :: xs'' -> LCons (x', x'') :: xs''
+      | x'' :: xs'' -> Raml.tick(12.0); LCons (x', x'') :: xs''
     end
   end
   | _ -> raise Invalid_argument
 
 let map_list body s =
   match s with
-  | LNil :: xs -> s
-  | LCons (hd, tl) :: xs -> map_list_aux body hd tl xs
+  | LNil :: xs -> Raml.tick(500.0); s
+  | LCons (hd, tl) :: xs -> Raml.tick(500.0); map_list_aux body hd tl xs
   | _ -> raise Invalid_argument
 
 let rec size_list_aux tl =
@@ -529,33 +558,33 @@ let rec size_list_aux tl =
 
 let size_list s =
   match s with
-  | LNil :: xs -> Nat (Rnat.zero) :: xs
-  | LCons (_, tl) :: xs -> Nat (Rnat.add (Rnat.of_int 1) (size_list_aux tl)) :: xs
+  | LNil :: xs -> Raml.tick(80.0); Nat (Rnat.zero) :: xs
+  | LCons (_, tl) :: xs -> Raml.tick(80.0); Nat (Rnat.add (Rnat.of_int 1) (size_list_aux tl)) :: xs
   | _ -> raise Invalid_argument
 
 
 let rec iter_list_aux body hd tl s =
   match tl with
-  | LNil -> body (hd :: s)
-  | LCons (hd', tl') -> iter_list_aux body hd' tl' (body (hd :: s))
+  | LNil -> Raml.tick(7.0); body (hd :: s)
+  | LCons (hd', tl') -> Raml.tick(7.0); iter_list_aux body hd' tl' (body (hd :: s))
   | _ -> raise Invalid_argument
 
 let iter_list body s =
   match s with
-  | LNil :: xs -> xs
-  | LCons (hd, tl) :: xs -> iter_list_aux body hd tl xs
+  | LNil :: xs -> Raml.tick(500.0); xs
+  | LCons (hd, tl) :: xs -> Raml.tick(500.0); iter_list_aux body hd tl xs
   | _ -> raise Invalid_argument
 
 
 let contract s =
   match s with
   | Address :: xs -> Raml.tick(80.0);
-    if true then (MSome Contract) :: xs else MNone :: xs
+    if true then MSome Contract :: xs else MNone :: xs
   | _ -> raise Invalid_argument
 
 let transfer_tokens s =
   match s with
-  | _ :: Mutez :: Contract :: tl -> Raml.tick(160.0); TransferTokens :: tl
+  | _ :: Mutez :: Contract :: xs -> Raml.tick(160.0); TransferTokens :: xs
   | _ -> raise Invalid_argument
 
 (**** A contract taken from the chain ****)
@@ -569,10 +598,10 @@ let _ =
     drop (Rnat.of_int 1) |>
     push Address |>
     contract |>
-    if_none (push MString |> failwith) skip |>
+    if_none (push MString |> failwith) nop |>
     push Address |>
     contract |>
-    if_none (push MString |> failwith) skip |>
+    if_none (push MString |> failwith) nop |>
     dig (Rnat.of_int 3) |>
     dup |>
     dug (Rnat.of_int 4) |>
@@ -582,6 +611,7 @@ let _ =
     push Mutez |>
     push Unit |>
     transfer_tokens |>
+    cons |>
     dip (Rnat.of_int 1) (dig (Rnat.of_int 3) |> drop (Rnat.of_int 1)) |>
     dug (Rnat.of_int 3) |>
     dig (Rnat.of_int 3) |>
@@ -592,7 +622,8 @@ let _ =
     dug (Rnat.of_int 2) |>
     push Mutez |>
     push Unit |>
-    transfer_tokens |> cons |>
+    transfer_tokens |>
+    cons |>
     dip (Rnat.of_int 1) (dig (Rnat.of_int 3) |> drop (Rnat.of_int 1)) |>
     dug (Rnat.of_int 3) |>
     drop (Rnat.of_int 2) |>
