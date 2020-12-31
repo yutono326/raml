@@ -1,0 +1,24 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../../Documents/docker-tezos-hands-on"
+		}
+	],
+	"settings": {
+		"emmet.showSuggestionsAsSnippets": true,
+		"emmet.triggerExpansionOnTab": true,
+		"emmet.variables": {
+			"lang": "ja"
+		},
+		"explorer.confirmDelete": false,
+		"files.associations": {
+			".*lintrc": "json"
+		},
+		"window.title": "${activeEditorMedium}${separator}${rootName}",
+		"workbench.editor.labelFormat": "short",
+		"workbench.editor.tabSizing": "shrink"
+	}
+}

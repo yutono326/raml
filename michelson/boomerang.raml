@@ -30,7 +30,7 @@ let nop s = Raml.tick(70.0); s
 
 let (|>) f g = fun s -> Raml.tick(60.0); g (f s)
 
-let if_ bt bf s =
+let if_ (bt:t list -> t list) (bf:t list -> t list) s =
   match s with
   | Bool b :: xs -> Raml.tick(60.0); if b then bt xs else bf xs
   | _ ->  raise Invalid_argument
@@ -616,15 +616,29 @@ let source s = Raml.tick(80.0); Address :: s
 
 let amount s = Raml.tick(80.0); Mutez Rnat.zero :: s
 
+
+(* actual consume gas 22079 *)
 let _ =
   (
-    car |>
-    dup |>
-    gt |>
-    loop (Rnat.of_int 10) (push (Int (-1)) |> add |> dup |> gt) |>
-    nil |>
-    pair
+    dup |> car |>
+    dip1 dup |> swap |> cdr |>
+    push (Mutez Rnat.zero)|> nop |> amount |> compare |> eq |>
+    if_ nil
+      (nil |>
+       nop |> source |>
+       contract |>
+       if_none
+        (push MString |> failwith)
+        nop |>
+       nop |> amount |>
+       push Unit |>
+       transfer_tokens |>
+       cons) |>
+    push Unit |> dip1 dup |> swap |> pair |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 nop)))) |>
+    nop |>
+    dip1 (dip1 (dip1 nop |> drop1)) |>
+    dip1 (dip1 nop |> drop1)
   )
-  (Pair (Int 10, Int 0) :: [])
-
-let _ = 1
+  (Pair (Unit, Unit) :: [])

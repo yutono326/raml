@@ -1,7 +1,7 @@
 exception Invalid_argument
 
 type t =
-  Int of int | Nat of Rnat.t | MString | Mutez of Rnat.t | Bool of bool | Keyhash | Timestamp | Address | Unit | MNone | MSome of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | TransferTokens | Contract | Pair of t * t | Left of t | Right of t | MNil | MCons of t * t * t
+  Int of int | Nat of Rnat.t | MString | Mutez | Bool of bool | Keyhash | Timestamp | Address | Unit | MNone | MSome of t | LNil | LCons of t * t | SNil | SCons of t * t | Operation | TransferTokens | Contract | Pair of t * t | Left of t | Right of t | MNil | MCons of t * t * t
 
 let rec sr n i =
   Rnat.ifz i
@@ -210,7 +210,6 @@ let add s =
   | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix + (Rnat.to_int iy)) :: xs
   | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) + iy) :: xs
   | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.add ix iy) :: xs
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(100.0); Mutez (Rnat.add ix iy) :: xs
   | _ -> raise Invalid_argument
 
 let sub s =
@@ -219,8 +218,6 @@ let sub s =
   | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix - (Rnat.to_int iy)) :: xs
   | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) - iy) :: xs
   | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) - (Rnat.to_int iy)) :: xs
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(80.0);
-    let (m, _) = Rnat.minus ix iy in Mutez m :: xs
   | _ -> raise Invalid_argument
 
 let mult s =
@@ -228,8 +225,7 @@ let mult s =
   | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix * iy) :: xs
   | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix * (Rnat.to_int iy)) :: xs
   | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) * iy) :: xs
-  | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.mult ix iy) :: xs
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(200.0); Mutez (Rnat.mult ix iy) :: xs
+  | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.mult ix iy):: xs
   | _ -> raise Invalid_argument
 
 let ediv s =
@@ -246,14 +242,6 @@ let ediv s =
     Rnat.ifz iy
       (fun () -> MNone :: xs)
       (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in MSome (Pair (Nat d, Nat m)) :: xs)
-  | Mutez ix :: Nat iy :: xs -> Raml.tick(200.0);
-    Rnat.ifz iy
-      (fun () -> MNone :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in MSome (Pair (Mutez d, Mutez m)) :: xs)
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(200.0);
-    Rnat.ifz iy
-      (fun () -> MNone :: xs)
-      (fun n' -> let (d, m, _) = Rnat.div_mod ix iy in MSome (Pair (Nat d, Mutez m)) :: xs)
   | _ -> raise Invalid_argument
 
 let rec compare s =
@@ -264,11 +252,6 @@ let rec compare s =
     end
   end
   | Nat ix :: Nat iy :: xs -> Raml.tick(150.0); begin
-    if Rnat.to_int ix < Rnat.to_int iy then Int (-1) :: xs else begin
-      if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
-    end
-  end
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(104.0); begin
     if Rnat.to_int ix < Rnat.to_int iy then Int (-1) :: xs else begin
       if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
     end
@@ -609,22 +592,26 @@ let contract s =
 
 let transfer_tokens s =
   match s with
-  | _ :: Mutez _ :: Contract :: xs -> Raml.tick(160.0); TransferTokens :: xs
+  | _ :: Mutez :: Contract :: xs -> Raml.tick(160.0); TransferTokens :: xs
   | _ -> raise Invalid_argument
 
-let source s = Raml.tick(80.0); Address :: s
-
-let amount s = Raml.tick(80.0); Mutez Rnat.zero :: s
-
+(* actual consume gas 16275 *)
 let _ =
   (
-    car |>
+    nop |>
     dup |>
-    gt |>
-    loop (Rnat.of_int 10) (push (Int (-1)) |> add |> dup |> gt) |>
+    car |>
+    dip1 dup |>
+    swap |>
+    cdr |>
+    dip1 dup |>
+    swap |>
     nil |>
-    pair
+    pair |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 nop)) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 nop) |> drop1) |>
+    dip1 (dip1 nop |> drop1)
   )
-  (Pair (Int 10, Int 0) :: [])
-
-let _ = 1
+  (Pair (MString, MString) :: [])
