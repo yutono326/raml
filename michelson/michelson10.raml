@@ -30,7 +30,7 @@ let nop s = Raml.tick(70.0); s
 
 let (|>) f g = fun s -> Raml.tick(60.0); g (f s)
 
-let if_ bt bf s =
+let if_ (bt:t list -> t list) (bf:t list -> t list) s =
   match s with
   | Bool b :: xs -> Raml.tick(60.0); if b then bt xs else bf xs
   | _ ->  raise Invalid_argument
@@ -223,7 +223,7 @@ let sub s =
     let (m, _) = Rnat.minus ix iy in Mutez m :: xs
   | _ -> raise Invalid_argument
 
-let mult s =
+let mul s =
   match s with
   | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix * iy) :: xs
   | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix * (Rnat.to_int iy)) :: xs

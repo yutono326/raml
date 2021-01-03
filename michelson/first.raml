@@ -595,7 +595,7 @@ let transfer_tokens s =
   | _ :: Mutez :: Contract :: xs -> Raml.tick(160.0); TransferTokens :: xs
   | _ -> raise Invalid_argument
 
-(* actual consume gas 16275 *)
+(* actual consumed gas 16275 *)
 let _ =
   (
     nop |>

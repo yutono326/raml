@@ -617,28 +617,20 @@ let source s = Raml.tick(80.0); Address :: s
 let amount s = Raml.tick(80.0); Mutez Rnat.zero :: s
 
 
-(* actual consumed gas 22079 *)
+(* actual consumed gas 17923 *)
 let _ =
   (
+    nop |>
     dup |> car |>
     dip1 dup |> swap |> cdr |>
-    push (Mutez Rnat.zero)|> nop |> amount |> compare |> eq |>
-    if_ nil
-      (nil |>
-       nop |> source |>
-       contract |>
-       if_none
-        (push MString |> failwith)
-        nop |>
-       nop |> amount |>
-       push Unit |>
-       transfer_tokens |>
-       cons) |>
-    push Unit |> dip1 dup |> swap |> pair |>
+    push Address |>
+    push Unit |> nil |> pair |>
     nop |>
-    dip1 (dip1 (dip1 (dip1 (dip1 nop)))) |>
+    dip1 (dip1 (dip1 (dip1 (dip1 nop)))|> drop1) |>
     nop |>
-    dip1 (dip1 (dip1 nop |> drop1)) |>
+    dip1 (dip1 (dip1 (dip1 nop))|> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 nop) |> drop1) |>
     dip1 (dip1 nop |> drop1)
   )
   (Pair (Unit, Unit) :: [])

@@ -223,13 +223,14 @@ let sub s =
     let (m, _) = Rnat.minus ix iy in Mutez m :: xs
   | _ -> raise Invalid_argument
 
-let mult s =
+let mul s =
   match s with
   | Int ix :: Int iy :: xs -> Raml.tick(80.0); Int (ix * iy) :: xs
   | Int ix :: Nat iy :: xs -> Raml.tick(80.0); Int (ix * (Rnat.to_int iy)) :: xs
   | Nat ix :: Int iy :: xs -> Raml.tick(80.0); Int ((Rnat.to_int ix) * iy) :: xs
   | Nat ix :: Nat iy :: xs -> Raml.tick(80.0); Nat (Rnat.mult ix iy) :: xs
-  | Mutez ix :: Mutez iy :: xs -> Raml.tick(200.0); Mutez (Rnat.mult ix iy) :: xs
+  | Mutez ix :: Nat iy :: xs -> Raml.tick(200.0); Mutez (Rnat.mult ix iy) :: xs
+  | Nat ix :: Mutez iy :: xs -> Raml.tick(200.0); Mutez (Rnat.mult ix iy) :: xs
   | _ -> raise Invalid_argument
 
 let ediv s =
@@ -616,29 +617,99 @@ let source s = Raml.tick(80.0); Address :: s
 
 let amount s = Raml.tick(80.0); Mutez Rnat.zero :: s
 
-
-(* actual consumed gas 22079 *)
+(* actual consumed gas 86833 *)
 let _ =
   (
+    nop |>
     dup |> car |>
     dip1 dup |> swap |> cdr |>
-    push (Mutez Rnat.zero)|> nop |> amount |> compare |> eq |>
-    if_ nil
-      (nil |>
-       nop |> source |>
-       contract |>
-       if_none
-        (push MString |> failwith)
-        nop |>
-       nop |> amount |>
-       push Unit |>
-       transfer_tokens |>
-       cons) |>
-    push Unit |> dip1 dup |> swap |> pair |>
+    push (Int 7) |> push (Int 4) |> push (Int 3) |> add |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Nat (Rnat.of_int 7))  |> push (Nat (Rnat.of_int 4)) |> push (Nat (Rnat.of_int 3)) |> add |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Mutez (Rnat.of_int 4600000)) |>
+    push (Mutez (Rnat.of_int 3400000)) |> push (Mutez (Rnat.of_int 1200000)) |> add |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Int (-1)) |> push (Int 4) |> push (Int 3) |> sub |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Int (-1)) |> push (Nat (Rnat.of_int 4)) |> push (Nat (Rnat.of_int 3)) |> sub |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Mutez (Rnat.of_int 6800000)) |>
+    push (Mutez (Rnat.of_int 3400000)) |> push (Mutez (Rnat.of_int 10200000)) |> sub |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Int 12) |> push (Int 4) |> push (Int 3) |> mul |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Nat (Rnat.of_int 12)) |> push (Nat (Rnat.of_int 4)) |> push (Nat (Rnat.of_int 3)) |> mul |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Mutez (Rnat.of_int 12000000)) |>
+    push (Nat (Rnat.of_int 4)) |> push (Mutez (Rnat.of_int 3000000)) |> mul |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Int 2) |>
+    push (Int 5) |> push (Int 10) |>
+    ediv |>
+    if_none (push MString |> failwith) nop |>
+    car |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Nat (Rnat.of_int 2)) |>
+    push (Nat (Rnat.of_int 5)) |> push (Nat (Rnat.of_int 10)) |>
+    ediv |>
+    if_none (push MString |> failwith) nop |>
+    car |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Mutez (Rnat.of_int 1500000)) |>
+    push (Nat (Rnat.of_int 2)) |> push (Mutez (Rnat.of_int 3000000)) |>
+    ediv |>
+    if_none (push MString |> failwith) nop |>
+    car |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Int 3) |> push (Nat (Rnat.of_int 3)) |> int |> compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push (Nat (Rnat.of_int 3)) |> push (Int (-3)) |> abs |>
+    compare |> eq |>
+    if_ (push Unit) (push Unit |> failwith) |>
+    push Unit |> nil |> pair |>
     nop |>
-    dip1 (dip1 (dip1 (dip1 (dip1 nop)))) |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))))))))))))))) |> drop1) |>
     nop |>
-    dip1 (dip1 (dip1 nop |> drop1)) |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))))))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))))))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop))))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 (dip1 nop)))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 (dip1 nop))) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 (dip1 nop)) |> drop1) |>
+    nop |>
+    dip1 (dip1 (dip1 nop) |> drop1) |>
     dip1 (dip1 nop |> drop1)
   )
   (Pair (Unit, Unit) :: [])
