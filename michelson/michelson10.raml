@@ -273,6 +273,7 @@ let rec compare s =
       if Rnat.to_int ix = Rnat.to_int iy then Int 0 :: xs else Int 1 :: xs
     end
   end
+  | MString :: MString :: xs -> Raml.tick(120.0); Int 0 :: xs
   | _ -> raise Invalid_argument
 
 let pair s =
@@ -616,7 +617,7 @@ let source s = Raml.tick(80.0); Address :: s
 
 let amount s = Raml.tick(80.0); Mutez Rnat.zero :: s
 
-let _ =
+(*let _ =
   (
     car |>
     dup |>
@@ -625,6 +626,12 @@ let _ =
     nil |>
     pair
   )
-  (Pair (Int 10, Int 0) :: [])
+  (Pair (Int 10, Int 0) :: [])*)
 
-let _ = 1
+let _ =
+  (
+    car |>
+    nil |>
+    pair
+  )
+  (Pair (Unit, Unit) :: [])
