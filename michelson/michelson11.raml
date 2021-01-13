@@ -637,4 +637,4 @@ let source s = Raml.tick(3.0); Address :: s
 
 let amount s = Raml.tick(3.0); Mutez Rnat.zero :: s
 
-let _ = 1
+let _ = loop (Rnat.of_int 10) (push (Bool true) |> push (Bool false)) (Unit :: [])
