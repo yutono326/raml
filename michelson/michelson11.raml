@@ -43,7 +43,7 @@ let rec loop n body s =
       | _ -> raise Invalid_argument)
     (fun n' ->
       match s with
-      | _ :: xs -> Raml.tick(4.0); loop n' body (body xs)
+      | _ :: xs -> Raml.tick(2.0); loop n' body (body xs)
       | _ -> raise Invalid_argument)
 
 (*let rec loop_left_aux n body s =
@@ -610,17 +610,17 @@ let size_list s =
   | _ -> raise Invalid_argument
 
 
-(*let rec iter_list_aux body hd tl s =
+let rec iter_list_aux body hd tl s =
   match tl with
-  | LNil -> Raml.tick(7.0); body (hd :: s)
-  | LCons (hd', tl') -> Raml.tick(7.0); iter_list_aux body hd' tl' (body (hd :: s))
+  | LNil -> Raml.tick(3.0); body (hd :: s)
+  | LCons (hd', tl') -> Raml.tick(1.0); iter_list_aux body hd' tl' (body (hd :: s))
   | _ -> raise Invalid_argument
 
 let iter_list body s =
   match s with
-  | LNil :: xs -> Raml.tick(500.0); xs
-  | LCons (hd, tl) :: xs -> Raml.tick(500.0); iter_list_aux body hd tl xs
-  | _ -> raise Invalid_argument*)
+  | LNil :: xs -> Raml.tick(4.0); xs
+  | LCons (hd, tl) :: xs -> Raml.tick(2.0); iter_list_aux body hd tl xs
+  | _ -> raise Invalid_argument
 
 let transfer_tokens s =
   match s with

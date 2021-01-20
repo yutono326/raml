@@ -654,12 +654,22 @@ let amount s = Raml.tick(3.0); Mutez Rnat.zero :: s
 (* receive int as parameter and reduce it to 0  *)
 
 (* let _ = loop (Rnat.of_int 10) (p |> push (Int (-1)) |> add |> dup |> gt |> p) (Bool true :: Int 10 :: [])
- this derived bound is 201.0 *)
+ this derived bound is 202.0 *)
 
-let rec f s = Raml.tick(201.0); Int 0 :: []
+ (*let f s = Raml.tick(202.0); Int 0 :: []*)
 
 let _ =
-  (
+  (p
+  (pair
+  (nil
+  (loop (Rnat.of_int 10) (p |> push (Int (-1)) |> add |> dup |> gt |> p)
+  (gt
+  (dup
+  (car
+  (Pair (Int 10, Int 0) :: []))))))))
+
+
+ (* (
     car |>
     dup |>
     gt |>
@@ -669,15 +679,29 @@ let _ =
     p
   )
   (Pair (Int 10, Int 0) :: [])
+  *)
 
 (* receive int list as parameter and output its sum *)
 (* not success *)
+
+(*let _ = iter_list (p |> add |> p) (LCons (Int 1, LCons (Int 2, LCons (Int 3, LCons (Int 4, LNil)))) :: Int 0 :: [])
+this derived bound is 32.0 *)
+
 (*let _ =
-  (
+  (pair
+  (nil
+  (iter_list add
+  (dip1 (push (Int 0))
+  (car
+  (Pair (LCons (Int 1, LCons (Int 2, LCons (Int 3, LCons (Int 4, LNil)))), Int 0) :: []))))))
+*)
+
+ (* (
     car |>
     dip1 (push (Int 0)) |>
     iter_list add |>
     nil |>
     pair
   )
-  (Pair (LCons (Int 1, LCons (Int 2, LCons (Int 3, LCons (Int 4, LNil)))), Int 0) :: [])*)
+  (Pair (LCons (Int 1, LCons (Int 2, LCons (Int 3, LCons (Int 4, LNil)))), Int 0) :: [])
+*)
