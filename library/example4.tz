@@ -1,0 +1,7 @@
+parameter (list int);
+storage int;
+code {  CAR ;
+        DIP { PUSH int 0 } ;
+        ITER { ADD } ;
+        NIL operation ;
+        PAIR  }

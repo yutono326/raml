@@ -1,0 +1,9 @@
+parameter (pair int int);
+storage int;
+code { CAR ;
+       DUP ;
+       CAR ;
+       DIP { CDR } ;
+       ADD ;
+       NIL operation ;
+       PAIR }

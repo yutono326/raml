@@ -1,0 +1,7 @@
+parameter int;
+storage int;
+code {  CAR ;
+        GT ;
+        IF {PUSH int 1} {PUSH int -1} ;
+        NIL operation ;
+        PAIR  }

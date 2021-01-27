@@ -565,7 +565,7 @@ let cons s =
   | x :: y :: xs -> Raml.tick(8.0); (LCons (x, y)) :: xs
   | _ -> raise Invalid_argument
 
-let nil s = Raml.tick(8.0); LNil :: s
+let nil s = Raml.tick(6.0); LNil :: s
 
 let if_cons bt bf s =
   match s with
@@ -639,7 +639,8 @@ let amount s = Raml.tick(3.0); Mutez Rnat.zero :: s
 
 
 (* receive pair (int, int) as parameter and output its sum *)
-(*let _ =
+(*
+let _ =
   (
     car |>
     dup |>
@@ -649,7 +650,19 @@ let amount s = Raml.tick(3.0); Mutez Rnat.zero :: s
     nil |>
     pair
   )
-  (Pair (Pair (Int 3, Int 5),  Int 0) :: [])*)
+  (Pair (Pair (Int 3, Int 5),  Int 0) :: [])
+*)
+
+let _ =
+  (p
+  (pair
+  (nil
+  (add
+  (dip1 (p |> cdr |> p)
+  (car
+  (dup
+  (car
+  (Pair (Pair (Int 3, Int 5),  Int 0) :: [])))))))))
 
 (* receive int as parameter and reduce it to 0  *)
 
@@ -657,7 +670,7 @@ let amount s = Raml.tick(3.0); Mutez Rnat.zero :: s
  this derived bound is 202.0 *)
 
  (*let f s = Raml.tick(202.0); Int 0 :: []*)
-
+(*
 let _ =
   (p
   (pair
@@ -667,7 +680,7 @@ let _ =
   (dup
   (car
   (Pair (Int 10, Int 0) :: []))))))))
-
+*)
 
  (* (
     car |>

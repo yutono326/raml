@@ -1,0 +1,8 @@
+parameter int;
+storage int;
+code {  CAR ;
+        DUP ;
+        GT ;
+        LOOP { PUSH int -1 ; ADD ; DUP ; GT } ;
+        NIL operation ;
+        PAIR  }
